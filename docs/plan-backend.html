@@ -121,7 +121,7 @@
 <div class="wrap">
 
   <header>
-    <span class="eyebrow">Plan de backend · v1</span>
+    <span class="eyebrow">Plan de backend · v2</span>
     <h1>Pastillero Santos</h1>
     <p class="lede">Cómo se conectan el ESP32, Vercel y Supabase. Qué funciones serverless vamos a escribir, qué hace cada una y en qué orden las construimos.</p>
     <div class="blister" aria-label="Las cinco cavidades del pastillero con su pin">
@@ -131,13 +131,13 @@
       <div class="cell"><b>4</b><span>GPIO 17</span></div>
       <div class="cell"><b>5</b><span>GPIO 16</span></div>
     </div>
-    <p class="caption">Cinco cavidades, cada una con su LED. Buzzer en GPIO 12, RTC DS1307 en I²C (SDA 21, SCL 22). En el ejemplo, la pastilla 2 está sonando.</p>
+    <p class="caption">Cinco cavidades, cada una con su LED. Buzzer en GPIO 12. Sin módulo RTC: la hora la manda Vercel. En el ejemplo, la pastilla 2 está sonando.</p>
   </header>
 
   <section>
     <span class="eyebrow">Vista general</span>
     <h2>Tres piezas, una sola regla</h2>
-    <p class="prose">La alarma se decide <strong>dentro del ESP32</strong>, con su reloj RTC. La nube solo sirve para configurar los horarios desde el celular y para ver qué pasó. Así, si se cae el WiFi o Vercel, la pastilla suena igual.</p>
+    <p class="prose">La alarma se decide <strong>dentro del ESP32</strong>, con su reloj interno. Vercel le manda la hora de Bogotá en cada consulta, y además sirve para configurar los horarios desde el celular y ver qué pasó. Si se cae el WiFi o Vercel, la pastilla suena igual mientras el ESP32 no pierda la corriente.</p>
     <div class="diagram">
 <pre class="mermaid">
 flowchart LR
@@ -147,11 +147,12 @@ flowchart LR
     A["Funciones serverless<br/>/api/..."]
   end
   E["ESP32 DevKit V1<br/>MicroPython"]
-  H["RTC DS1307<br/>5 LEDs + buzzer"]
+  H["5 LEDs + buzzer"]
   S[("Supabase<br/>Postgres")]
   F -->|"abre la página"| P
   P -->|"fetch HTTPS + x-admin-key"| A
   E -->|"polling HTTPS cada 30 s + x-device-key"| A
+  A -.->|"horarios + hora de Bogotá"| E
   A -->|"supabase-js + clave secreta"| S
   E --- H
 </pre>
@@ -166,7 +167,7 @@ flowchart LR
         <h3>ESP32</h3>
         <span class="tag">MicroPython · firmware/</span>
         <ul>
-          <li>Lee la hora del DS1307 y la corrige por NTP (hora de Bogotá, UTC−5) cuando hay WiFi.</li>
+          <li>Pone en hora su reloj interno con la hora de Bogotá que le manda Vercel.</li>
           <li>Dispara la alarma: LED de la cavidad y buzzer intermitente.</li>
           <li>Guarda los horarios en <code>schedules.json</code> (flash).</li>
           <li>Consulta a Vercel cada 30 s, o cada 5 s mientras suena.</li>
@@ -178,6 +179,7 @@ flowchart LR
         <span class="tag">Node.js · web/</span>
         <ul>
           <li>Sirve el panel web para el celular.</li>
+          <li>Da la hora: la calcula en la zona <code>America/Bogota</code> y se la manda al ESP32.</li>
           <li>Tiene las 5 funciones serverless, toda la lógica de la nube.</li>
           <li>Revisa las claves del dispositivo y del administrador.</li>
           <li>Es el único que habla con Supabase.</li>
@@ -209,13 +211,15 @@ flowchart LR
           <span class="method">GET</span><span class="path">/api/device/sync?ringing=0|1</span>
           <span class="who device">ESP32 · cada 30 s (5 s si suena)</span>
         </div>
-        <p>Es el latido del dispositivo. Devuelve los horarios vigentes y los comandos pendientes, y anota que el ESP32 sigue vivo.</p>
+        <p>Es el latido del dispositivo. Devuelve la hora de Bogotá, los horarios vigentes y los comandos pendientes, y anota que el ESP32 sigue vivo.</p>
         <dl class="meta">
           <dt>Lee</dt><dd><code>schedules</code></dd>
           <dt>Escribe</dt><dd><code>commands</code> (marca como consumidos), <code>device_status</code> (último contacto, si está sonando)</dd>
           <dt>Regla</dt><dd>Un comando con más de 2 minutos se descarta. Así, un "silenciar" viejo no apaga la alarma del día siguiente.</dd>
+          <dt>Hora</dt><dd>Vercel la manda como segundos desde 1970 (<code>epoch</code>) más el desfase de Bogotá (−300 min). El ESP32 ajusta su reloj con cada respuesta. El viaje por la red le resta 1 a 2 s, que no importa para alarmas por minuto.</dd>
         </dl>
 <pre class="code">{
+  "clock": { "epoch": 1795006800, "utc_offset_min": -300, "local": "2026-11-18T08:00:00-05:00" },
   "schedules": [
     { "slot": 0, "time": "08:00", "active": true },
     { "slot": 1, "time": null,    "active": false }
@@ -301,7 +305,7 @@ erDiagram
     bigint id PK
     smallint slot "0 a 4"
     text type "triggered, silenced, missed"
-    text device_time "hora del RTC"
+    text device_time "hora del ESP32"
     timestamptz created_at
   }
   commands {
@@ -348,8 +352,8 @@ sequenceDiagram
   Note over E: hasta 30 s después
   E->>V: GET /api/device/sync
   V->>S: lee schedules, consume commands, actualiza device_status
-  V-->>E: schedules con 08:00
-  E->>E: guarda schedules.json en la flash
+  V-->>E: hora de Bogotá + schedules con 08:00
+  E->>E: ajusta su reloj y guarda schedules.json en la flash
 </pre>
     </div>
   </section>
@@ -365,7 +369,7 @@ sequenceDiagram
   participant V as Vercel /api
   participant S as Supabase
   actor F as Familiar
-  E->>E: el RTC marca 08:00 y coincide con la pastilla 1
+  E->>E: el reloj interno marca 08:00 y coincide con la pastilla 1
   E->>E: LED GPIO 23 y buzzer encendidos
   E->>V: POST /api/device/events, triggered
   V->>S: insert en events
@@ -398,17 +402,21 @@ sequenceDiagram
   participant V as Vercel /api
   Note over E,V: el WiFi se cae
   E->>E: usa los horarios de schedules.json
-  E->>E: a las 08:00 suena igual, por el RTC
+  E->>E: a las 08:00 suena igual, el reloj interno sigue corriendo
   E->>E: guarda los eventos en la cola, máximo 50
   Note over E,V: el WiFi vuelve
   E->>V: POST /api/device/events con toda la cola
   E->>V: GET /api/device/sync
-  V-->>E: horarios al día
+  V-->>E: horarios al día y hora corregida
 </pre>
     </div>
     <div class="note">
       <strong>Límite conocido</strong>
       <p>Sin internet, el panel no puede silenciar la alarma. El buzzer se apaga solo a los 10 minutos y el evento queda marcado como <code>missed</code>. Si más adelante queremos silenciar sin red, la solución es un botón físico, que sería un cambio de hardware.</p>
+    </div>
+    <div class="note">
+      <strong>Límite por no tener RTC</strong>
+      <p>Si se va la luz y vuelve sin internet, el ESP32 no sabe qué hora es y no puede disparar alarmas hasta que se conecte a Vercel. Mientras tanto, los 5 LEDs parpadean despacio para avisar que está "sin hora". Los horarios no se pierden porque están en la flash.</p>
     </div>
   </section>
 
@@ -440,7 +448,8 @@ sequenceDiagram
           <tr><td>Consulta mientras suena</td><td class="num">5 s</td><td>Silenciar desde el celular tarda como mucho 5 s</td></tr>
           <tr><td>Alarma sin confirmar</td><td class="num">10 min</td><td>Se apaga el buzzer y se registra <code>missed</code></td></tr>
           <tr><td>Vida de un comando</td><td class="num">2 min</td><td>Un "silenciar" viejo se descarta</td></tr>
-          <tr><td>Zona horaria</td><td class="num">UTC−5</td><td>Bogotá, sin horario de verano: <code>TZ_OFFSET_HOURS = -5</code> en <code>config.py</code></td></tr>
+          <tr><td>Zona horaria</td><td class="num">UTC−5</td><td>Bogotá, sin horario de verano. La define Vercel (<code>TIMEZONE=America/Bogota</code>); el ESP32 no la configura</td></tr>
+          <tr><td>Ajuste del reloj</td><td class="num">30 s</td><td>En cada consulta, con 1 a 2 s de error por el viaje de red</td></tr>
           <tr><td>En línea si el último contacto fue hace menos de</td><td class="num">90 s</td><td>Tres consultas perdidas antes de mostrar "desconectado"</td></tr>
           <tr><td>Cola de eventos sin red</td><td class="num">50</td><td>Más de 50 eventos sin red: se descartan los más viejos</td></tr>
         </tbody>
@@ -456,7 +465,7 @@ sequenceDiagram
 ├── firmware/            <span class="c"># MicroPython, se sube al ESP32</span>
 │   ├── main.py          <span class="c"># bucle principal</span>
 │   ├── config.py        <span class="c"># WiFi y claves (fuera de git)</span>
-│   ├── ds1307.py  clock.py  alarms.py  cloud.py  net.py
+│   ├── clock.py  alarms.py  cloud.py  net.py
 ├── web/                 <span class="c"># proyecto de Vercel</span>
 │   ├── api/device/sync.js   api/device/events.js
 │   ├── api/state.js   api/schedules.js   api/silence.js
@@ -471,12 +480,12 @@ sequenceDiagram
     <span class="eyebrow">Orden de trabajo</span>
     <h2>Paso a paso</h2>
     <ol class="phases">
-      <li><div><h3>Prueba de hardware en MicroPython</h3><p>Encender los 5 LEDs, hacer sonar el buzzer y leer el DS1307 desde PyCharm. Todavía sin red.</p></div></li>
+      <li><div><h3>Prueba de hardware en MicroPython</h3><p>Encender los 5 LEDs y hacer sonar el buzzer desde PyCharm. Todavía sin red.</p></div></li>
       <li><div><h3>Base de datos en Supabase</h3><p>Crear el proyecto y correr <code>schema.sql</code>. Revisar que RLS esté activo.</p></div></li>
       <li><div><h3>API en Vercel</h3><p>Los 5 endpoints y las variables de entorno. Probarlos con <code>curl</code> antes de tocar el ESP32.</p></div></li>
       <li><div><h3>Panel web</h3><p>Horarios, botón de silenciar, estado en línea e historial, pensado para el celular.</p></div></li>
-      <li><div><h3>Firmware conectado</h3><p>WiFi, hora por NTP, consultas a Vercel, cola de eventos y horarios guardados en la flash.</p></div></li>
-      <li><div><h3>Prueba de punta a punta</h3><p>Una alarma a 2 minutos: silenciarla desde el celular, dejar que otra se pierda y desconectar el WiFi para ver que suena igual.</p></div></li>
+      <li><div><h3>Firmware conectado</h3><p>WiFi, hora desde Vercel, consultas, cola de eventos y horarios guardados en la flash.</p></div></li>
+      <li><div><h3>Prueba de punta a punta</h3><p>Una alarma a 2 minutos: silenciarla desde el celular, dejar que otra se pierda y desconectar el WiFi para ver que suena igual. Por último, reiniciarlo sin red para ver el aviso de "sin hora".</p></div></li>
     </ol>
   </section>
 
@@ -487,6 +496,7 @@ sequenceDiagram
       <table>
         <thead><tr><th>Tema</th><th>Propuesta</th></tr></thead>
         <tbody>
+          <tr><td>Módulo DS1307</td><td>Ya no se usa. Se puede desconectar, y los pines 21 y 22 quedan libres.</td></tr>
           <tr><td>Tipo de buzzer</td><td>Activo (se enciende con HIGH) o pasivo (necesita PWM). El firmware soporta los dos con una opción.</td></tr>
           <tr><td>Avisos al celular</td><td>Fuera de esta versión. Más adelante, una notificación cuando llegue un <code>missed</code>.</td></tr>
           <tr><td>Historial viejo</td><td>Sin limpieza al principio. Más adelante, un <code>pg_cron</code> en Supabase que borre eventos de más de 90 días.</td></tr>
