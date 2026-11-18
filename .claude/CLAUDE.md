@@ -26,7 +26,9 @@ Los conectores (MCP de Supabase, GitHub) **no tienen acceso** a estos recursos.
 
 ## Hardware
 - LEDs (compartimentos 1 a 5): GPIO 23, 19, 18, 17, 16 (verde, rojo, azul, amarillo, naranja).
-- Buzzer: GPIO 12 en el código; en el diagrama de Wokwi aparece en GPIO 15. Confirmar antes del firmware final.
+- Buzzer: `BUZZER_PIN = 15` en `firmware/config.py` (como el diagrama de Wokwi; el sketch viejo usaba 12). Activo o pasivo con `BUZZER_PASSIVE`. **Falta que el usuario confirme pin y tipo.**
+- LED azul de la placa (GPIO 2, "D2"): `STATUS_LED_PIN`, repite lo que hacen los 5 LEDs. Sirve para probar sin nada conectado.
+- WiFi de la casa: SSID **"Estrella"** (con mayúscula), en `firmware/config.py`.
 - **Sin RTC**: la hora de Bogotá (UTC−5) la manda Vercel en cada `/api/device/sync`.
 - Placa actual en **COM6** (chip USB CH340), MicroPython v1.29.0. Para flashear hay que entrar a modo descarga a mano: mantener BOOT, pulsar EN, soltar BOOT.
 - No hay sensor de toma: la toma se confirma desde el celular ("Ya se la tomó" → comando `silence`).
@@ -36,6 +38,9 @@ Los conectores (MCP de Supabase, GitHub) **no tienen acceso** a estos recursos.
 - `web/` — proyecto de Vercel: `public/index.html` (portal), `api/` (funciones), `.env` (fuera de git).
 - `supabase/migrations/` — esquema: `alarms`, `events`, `commands`, `device_status`, con RLS sin políticas.
 - `tools/run_on_board.py` — corre un script en la placa sin guardarlo: `python tools/run_on_board.py firmware/hw_test.py`.
+- `tools/upload_firmware.py --reset` — copia el firmware a la flash (verifica SHA-1) y reinicia. `tools/monitor.py` — lee la salida serie.
+- `tools/test_firmware.py` — prueba la lógica del firmware en el PC (simula machine). `tools/test_api.mjs` / `tools/test_prod.mjs` — prueban la API.
+- En Windows, correr los .py con `PYTHONIOENCODING=utf-8` para que se vean los acentos y ✓.
 
 ## Reglas
 - Nunca subir secretos: `web/.env`, `firmware/config.py` y `firmware_bin/` están en `.gitignore`.

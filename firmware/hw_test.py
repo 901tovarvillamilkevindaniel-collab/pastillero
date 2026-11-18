@@ -11,7 +11,7 @@ import time
 from machine import Pin, PWM
 
 LED_PINS = (23, 19, 18, 17, 16)
-BUZZER_PIN = 12
+BUZZER_PIN = 15   # como en el diagrama de Wokwi (en el sketch viejo era 12)
 
 leds = [Pin(p, Pin.OUT, value=0) for p in LED_PINS]
 buzzer = Pin(BUZZER_PIN, Pin.OUT, value=0)
