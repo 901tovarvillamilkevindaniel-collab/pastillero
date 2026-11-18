@@ -1,0 +1,535 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b6e5b">
+<title>Pastillero Santos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Mono:wght@500;700&family=Atkinson+Hyperlegible+Next:wght@400;600;700&display=swap">
+<style>
+  /* Layout: una columna para celular (máx. 480px); cada pastilla es una fila con el color de su LED */
+  :root {
+    --bg: #f4f7f6;
+    --surface: #ffffff;
+    --ink: #16201c;
+    --muted: #5a6a63;
+    --line: #d9e2de;
+    --accent: #0b6e5b;
+    --accent-ink: #ffffff;
+    --accent-soft: #e3f2ee;
+    --alarm: #c2410c;
+    --alarm-soft: #fff0e5;
+    --ok: #15803d;
+    --off: #98a39e;
+    --led-1: #16a34a;
+    --led-2: #dc2626;
+    --led-3: #2563eb;
+    --led-4: #ca8a04;
+    --led-5: #ea580c;
+    --f-body: "Atkinson Hyperlegible Next", "Segoe UI", system-ui, sans-serif;
+    --f-mono: "Atkinson Hyperlegible Mono", ui-monospace, Consolas, monospace;
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0e1412; --surface: #161f1c; --ink: #e5eeea; --muted: #9cafa7; --line: #29352f;
+      --accent: #3cc2a3; --accent-ink: #06231c; --accent-soft: #123129;
+      --alarm: #fb923c; --alarm-soft: #3a2314; --ok: #4ade80; --off: #5f6b66;
+      --led-1: #22c55e; --led-2: #f87171; --led-3: #60a5fa; --led-4: #facc15; --led-5: #fb923c;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e1412; --surface: #161f1c; --ink: #e5eeea; --muted: #9cafa7; --line: #29352f;
+    --accent: #3cc2a3; --accent-ink: #06231c; --accent-soft: #123129;
+    --alarm: #fb923c; --alarm-soft: #3a2314; --ok: #4ade80; --off: #5f6b66;
+    --led-1: #22c55e; --led-2: #f87171; --led-3: #60a5fa; --led-4: #facc15; --led-5: #fb923c;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: var(--f-body); font-size: 17px; line-height: 1.45;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: calc(16px + env(safe-area-inset-top, 0px)) calc(110px + env(safe-area-inset-bottom, 0px));
+  }
+  main { max-width: 480px; margin: 0 auto; display: grid; gap: 18px; }
+  h1, h2 { margin: 0; line-height: 1.2; text-wrap: balance; }
+  h1 { font-size: 1.5rem; font-weight: 700; }
+  h2 { font-size: 1.05rem; font-weight: 700; }
+  p { margin: 0; }
+  button, input { font: inherit; color: inherit; }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .muted { color: var(--muted); }
+  .mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+
+  /* Cabecera */
+  header { display: grid; gap: 10px; }
+  .head-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .chip { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; font-size: 0.9rem; font-weight: 600; background: var(--surface); border: 1px solid var(--line); }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--off); flex: none; }
+  .chip.online .dot { background: var(--ok); }
+  .chip.ringing { border-color: var(--alarm); color: var(--alarm); background: var(--alarm-soft); }
+  .chip.ringing .dot { background: var(--alarm); }
+  .clock { display: flex; align-items: baseline; gap: 10px; }
+  .clock .mono { font-size: 2.4rem; font-weight: 700; letter-spacing: -0.02em; }
+
+  /* Banda de demostración */
+  .demo { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; border-radius: var(--radius); border: 1.5px dashed var(--line); font-size: 0.92rem; color: var(--muted); }
+
+  /* Alarma sonando */
+  .ringing-card { display: grid; gap: 12px; padding: 18px; border-radius: var(--radius); background: var(--alarm-soft); border: 2px solid var(--alarm); }
+  .ringing-card .title { font-size: 1.25rem; font-weight: 700; color: var(--alarm); }
+  .btn-silence { width: 100%; min-height: 56px; border: none; border-radius: 12px; background: var(--alarm); color: var(--surface); font-weight: 700; font-size: 1.1rem; cursor: pointer; }
+
+  /* Próxima toma */
+  .next { padding: 16px 18px; border-radius: var(--radius); background: var(--accent-soft); display: grid; gap: 2px; }
+  .next .label { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); font-weight: 700; }
+  .next .what { font-size: 1.15rem; font-weight: 700; }
+
+  /* Lista de pastillas */
+  .section { display: grid; gap: 10px; }
+  .section-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .slots { display: grid; gap: 10px; }
+  .slot { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px 12px; align-items: center; }
+  .slot.inactive { opacity: 0.72; }
+  .slot.is-ringing { border: 2px solid var(--alarm); }
+  .led { width: 26px; height: 26px; border-radius: 50%; background: var(--c); box-shadow: inset 0 -3px 0 rgba(0,0,0,0.18); position: relative; }
+  .slot.inactive .led { background: transparent; border: 3px solid var(--c); box-shadow: none; }
+  .slot.is-ringing .led { animation: blink 0.9s steps(2, start) infinite; }
+  @keyframes blink { to { visibility: hidden; } }
+  .slot-meta { display: grid; gap: 2px; min-width: 0; }
+  .slot-num { font-size: 0.8rem; color: var(--muted); }
+  .name-input { border: none; background: transparent; padding: 0; font-weight: 700; font-size: 1.05rem; width: 100%; min-width: 0; border-bottom: 1.5px dashed transparent; }
+  .name-input:hover, .name-input:focus { border-bottom-color: var(--line); outline: none; }
+  .name-input::placeholder { color: var(--off); font-weight: 600; }
+  .time-input { grid-column: 2 / 4; font-family: var(--f-mono); font-size: 1.6rem; font-weight: 700; padding: 6px 10px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--bg); width: 100%; min-height: 52px; }
+  .time-input:focus { border-color: var(--accent); outline: none; }
+
+  /* Interruptor */
+  .switch { position: relative; width: 52px; height: 30px; flex: none; }
+  .switch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+  .switch .track { position: absolute; inset: 0; border-radius: 999px; background: var(--line); transition: background 0.15s; pointer-events: none; }
+  .switch .track::after { content: ""; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: var(--surface); box-shadow: 0 1px 3px rgba(0,0,0,0.25); transition: transform 0.15s; }
+  .switch input:checked + .track { background: var(--accent); }
+  .switch input:checked + .track::after { transform: translateX(22px); }
+  .switch input:focus-visible + .track { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .switch input:disabled { cursor: not-allowed; }
+  .switch input:disabled + .track { opacity: 0.45; }
+
+  /* Historial */
+  .events { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+  .events li { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+  .events li:last-child { border-bottom: none; }
+  .events .ev-led { width: 12px; height: 12px; border-radius: 50%; background: var(--c); }
+  .events .ev-what { min-width: 0; }
+  .events .ev-what b { font-weight: 700; }
+  .badge { font-size: 0.8rem; font-weight: 700; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
+  .badge.triggered { background: var(--accent-soft); color: var(--accent); }
+  .badge.silenced { background: var(--accent-soft); color: var(--ok); }
+  .badge.missed { background: var(--alarm-soft); color: var(--alarm); }
+  .empty { padding: 18px; text-align: center; color: var(--muted); }
+
+  /* Acceso */
+  details.access { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; }
+  details.access summary { cursor: pointer; font-weight: 600; }
+  .key-form { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .key-form input { flex: 1 1 200px; min-width: 0; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--bg); }
+  .btn { min-height: 44px; padding: 0 18px; border-radius: 10px; border: 1.5px solid var(--accent); background: var(--surface); color: var(--accent); font-weight: 700; cursor: pointer; }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn.small { min-height: 36px; padding: 0 12px; font-size: 0.9rem; }
+
+  /* Barra de guardar */
+  .savebar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; background: var(--surface); border-top: 1px solid var(--line);
+    padding: 12px max(16px, env(safe-area-inset-right, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+  .savebar-inner { max-width: 480px; margin: 0 auto; display: flex; gap: 10px; align-items: center; }
+  .savebar .status { flex: 1; font-size: 0.92rem; color: var(--muted); min-width: 0; }
+  .savebar .btn.primary { min-height: 50px; padding: 0 22px; }
+
+  .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(90px + env(safe-area-inset-bottom, 0px)); z-index: 6; background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-weight: 600; font-size: 0.95rem; max-width: calc(100% - 32px); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .slot.is-ringing .led { animation: none; }
+    .switch .track, .switch .track::after { transition: none; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="head-row">
+      <h1>Pastillero Santos</h1>
+      <span class="chip" id="deviceChip"><span class="dot"></span><span id="deviceText">Conectando…</span></span>
+    </div>
+    <div class="clock"><span class="mono" id="clockNow">--:--</span><span class="muted">hora de Bogotá</span></div>
+  </header>
+
+  <div class="demo" id="demoBand" hidden>
+    <span>Modo demostración: la API todavía no existe, los datos son de ejemplo.</span>
+    <button class="btn small" id="simulateBtn" type="button">Simular alarma</button>
+  </div>
+
+  <section class="ringing-card" id="ringingCard" hidden aria-live="assertive">
+    <p class="title" id="ringingTitle">Sonando</p>
+    <p id="ringingDetail" class="muted"></p>
+    <button class="btn-silence" id="silenceBtn" type="button">Silenciar alarma</button>
+  </section>
+
+  <section class="next" id="nextCard" aria-live="polite">
+    <span class="label">Próxima toma</span>
+    <span class="what" id="nextWhat">Sin horarios activos</span>
+    <span class="muted" id="nextWhen"></span>
+  </section>
+
+  <section class="section" aria-labelledby="slotsTitle">
+    <div class="section-head">
+      <h2 id="slotsTitle">Horarios</h2>
+      <span class="muted" style="font-size:0.9rem">Toca el nombre para cambiarlo</span>
+    </div>
+    <form id="slotsForm" class="slots" novalidate></form>
+  </section>
+
+  <section class="section" aria-labelledby="historyTitle">
+    <h2 id="historyTitle">Historial</h2>
+    <ul class="events" id="events"><li class="empty">Todavía no hay tomas registradas.</li></ul>
+  </section>
+
+  <details class="access" id="access">
+    <summary>Clave de acceso</summary>
+    <p class="muted" style="margin-top:8px;font-size:0.92rem">Es la <span class="mono">ADMIN_KEY</span> del archivo .env. Se guarda solo en este celular.</p>
+    <form class="key-form" id="keyForm">
+      <input type="password" id="adminKey" autocomplete="current-password" placeholder="Pega la clave aquí" aria-label="Clave de acceso">
+      <button class="btn primary" type="submit">Entrar</button>
+    </form>
+  </details>
+</main>
+
+<div class="savebar">
+  <div class="savebar-inner">
+    <span class="status" id="saveStatus">Sin cambios</span>
+    <button class="btn primary" id="saveBtn" type="submit" form="slotsForm" disabled>Guardar</button>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+(() => {
+  const SLOTS = 5;
+  const LEDS = [
+    { gpio: 23, color: 'var(--led-1)', color_name: 'verde' },
+    { gpio: 19, color: 'var(--led-2)', color_name: 'rojo' },
+    { gpio: 18, color: 'var(--led-3)', color_name: 'azul' },
+    { gpio: 17, color: 'var(--led-4)', color_name: 'amarillo' },
+    { gpio: 16, color: 'var(--led-5)', color_name: 'naranja' },
+  ];
+  const TZ = 'America/Bogota';
+  const ONLINE_MS = 90 * 1000;
+  const REFRESH_MS = 10 * 1000;
+  const KEY_STORE = 'pastillero.adminKey';
+  const EVENT_LABEL = { triggered: 'Sonó', silenced: 'Confirmada', missed: 'Sin confirmar' };
+
+  const $ = (id) => document.getElementById(id);
+  const state = { demo: false, data: null, dirty: false, saving: false };
+
+  // ---------- utilidades ----------
+  const storage = {
+    get() { try { return localStorage.getItem(KEY_STORE) || ''; } catch { return ''; } },
+    set(v) { try { localStorage.setItem(KEY_STORE, v); } catch {} },
+  };
+  const hhmm = new Intl.DateTimeFormat('es-CO', { timeZone: TZ, hour: '2-digit', minute: '2-digit', hour12: false });
+  const dayTime = new Intl.DateTimeFormat('es-CO', { timeZone: TZ, weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false });
+  function bogotaMinutes(date = new Date()) {
+    const [h, m] = hhmm.format(date).split(':').map(Number);
+    return (h % 24) * 60 + m;
+  }
+  function toMinutes(t) { const [h, m] = t.split(':').map(Number); return h * 60 + m; }
+  function duration(min) {
+    if (min < 1) return 'ahora';
+    const h = Math.floor(min / 60), m = min % 60;
+    return 'en ' + (h ? h + ' h ' : '') + (m ? m + ' min' : '').trim();
+  }
+  function ago(ms) {
+    const s = Math.max(0, Math.round(ms / 1000));
+    if (s < 60) return 'hace ' + s + ' s';
+    const m = Math.round(s / 60);
+    if (m < 60) return 'hace ' + m + ' min';
+    return 'hace ' + Math.round(m / 60) + ' h';
+  }
+  function slotName(s) { return (s.label && s.label.trim()) || 'Pastilla ' + (s.slot + 1); }
+  let toastTimer;
+  function toast(msg) {
+    const t = $('toast'); t.textContent = msg; t.hidden = false;
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 2800);
+  }
+
+  // ---------- datos de ejemplo (modo demostración) ----------
+  function demoData() {
+    const now = Date.now();
+    const iso = (minAgo) => new Date(now - minAgo * 60000).toISOString();
+    return {
+      server_time: new Date(now).toISOString(),
+      device: { last_seen_at: iso(0.2), ringing: false },
+      schedules: [
+        { slot: 0, time: '07:00', active: true, label: 'Losartán 50 mg' },
+        { slot: 1, time: '13:00', active: true, label: 'Metformina' },
+        { slot: 2, time: '20:00', active: true, label: 'Atorvastatina' },
+        { slot: 3, time: '09:00', active: false, label: 'Vitamina D' },
+        { slot: 4, time: null, active: false, label: '' },
+      ],
+      events: [
+        { slot: 0, type: 'silenced', created_at: iso(95) },
+        { slot: 0, type: 'triggered', created_at: iso(97) },
+        { slot: 2, type: 'missed', created_at: iso(60 * 11) },
+        { slot: 2, type: 'triggered', created_at: iso(60 * 11 + 10) },
+        { slot: 1, type: 'silenced', created_at: iso(60 * 18) },
+        { slot: 1, type: 'triggered', created_at: iso(60 * 18 + 2) },
+      ],
+    };
+  }
+
+  // ---------- API ----------
+  async function api(path, opts = {}) {
+    const res = await fetch(path, {
+      ...opts,
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': storage.get() },
+      cache: 'no-store',
+    });
+    const ct = res.headers.get('content-type') || '';
+    if (res.status === 401) { const e = new Error('La clave de acceso no es correcta.'); e.code = 401; throw e; }
+    if (!ct.includes('application/json')) { const e = new Error('No hay API en este servidor.'); e.code = 'noapi'; throw e; }
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error || 'El servidor respondió ' + res.status + '.');
+    return body;
+  }
+
+  async function load() {
+    if (state.demo) { render(); return; }
+    try {
+      const data = await api('/api/state');
+      state.data = data; render();
+    } catch (e) {
+      if (e.code === 401) { $('access').open = true; $('deviceText').textContent = 'Falta la clave'; return; }
+      if (!state.data) { startDemo(); return; }
+      toast('No se pudo actualizar. Revisa tu conexión.');
+    }
+  }
+
+  function startDemo() {
+    state.demo = true;
+    state.data = demoData();
+    $('demoBand').hidden = false;
+    render();
+  }
+
+  // ---------- estado derivado ----------
+  function ringingSlots(data) {
+    if (!data.device || !data.device.ringing) return [];
+    const open = new Set();
+    // Eventos vienen del más nuevo al más viejo: recorrer al revés
+    [...data.events].reverse().forEach((ev) => {
+      if (ev.type === 'triggered') open.add(ev.slot);
+      else open.delete(ev.slot);
+    });
+    return [...open];
+  }
+
+  function nextDose(schedules) {
+    const nowMin = bogotaMinutes();
+    let best = null;
+    schedules.forEach((s) => {
+      if (!s.active || !s.time) return;
+      let diff = toMinutes(s.time) - nowMin;
+      if (diff <= 0) diff += 24 * 60;
+      if (!best || diff < best.diff) best = { s, diff };
+    });
+    return best;
+  }
+
+  // ---------- render ----------
+  function render() {
+    const d = state.data; if (!d) return;
+    $('clockNow').textContent = hhmm.format(new Date());
+
+    // Estado del dispositivo
+    const chip = $('deviceChip');
+    const seen = d.device && d.device.last_seen_at ? Date.parse(d.device.last_seen_at) : null;
+    const serverNow = d.server_time ? Date.parse(d.server_time) : Date.now();
+    const online = seen !== null && serverNow - seen < ONLINE_MS;
+    const ringing = ringingSlots(d);
+    chip.className = 'chip' + (ringing.length ? ' ringing' : online ? ' online' : '');
+    $('deviceText').textContent = ringing.length ? 'Sonando' : online ? 'En línea · ' + ago(serverNow - seen) : seen ? 'Desconectado · ' + ago(serverNow - seen) : 'Nunca se ha conectado';
+
+    // Alarma sonando
+    $('ringingCard').hidden = ringing.length === 0;
+    if (ringing.length) {
+      const names = ringing.map((slot) => slotName(d.schedules.find((s) => s.slot === slot) || { slot }));
+      $('ringingTitle').textContent = 'Sonando: ' + names.join(', ');
+      $('ringingDetail').textContent = 'Cuando la persona tome la pastilla, silencia la alarma. Se apaga sola a los 10 minutos.';
+    }
+
+    // Próxima toma
+    const next = nextDose(d.schedules);
+    $('nextWhat').textContent = next ? slotName(next.s) + ' · ' + next.s.time : 'Sin horarios activos';
+    $('nextWhen').textContent = next ? duration(next.diff) + ' · LED ' + LEDS[next.s.slot].color_name : 'Activa al menos una pastilla abajo.';
+
+    if (!state.dirty) renderSlots(d.schedules, ringing);
+    else markRinging(ringing);
+    renderEvents(d);
+  }
+
+  function renderSlots(schedules, ringing) {
+    const form = $('slotsForm');
+    form.replaceChildren();
+    for (let i = 0; i < SLOTS; i++) {
+      const s = schedules.find((x) => x.slot === i) || { slot: i, time: null, active: false, label: '' };
+      const row = document.createElement('div');
+      row.className = 'slot' + (s.active ? '' : ' inactive') + (ringing.includes(i) ? ' is-ringing' : '');
+      row.dataset.slot = i;
+      row.style.setProperty('--c', LEDS[i].color);
+
+      const led = document.createElement('span');
+      led.className = 'led'; led.title = 'LED ' + LEDS[i].color_name + ' · GPIO ' + LEDS[i].gpio;
+
+      const meta = document.createElement('div'); meta.className = 'slot-meta';
+      const num = document.createElement('span'); num.className = 'slot-num';
+      num.textContent = 'Pastilla ' + (i + 1) + ' · LED ' + LEDS[i].color_name;
+      const name = document.createElement('input');
+      name.className = 'name-input'; name.id = 'name-' + i; name.type = 'text'; name.maxLength = 40;
+      name.placeholder = 'Ponle un nombre'; name.value = s.label || '';
+      name.setAttribute('aria-label', 'Nombre de la pastilla ' + (i + 1));
+      meta.append(num, name);
+
+      const sw = document.createElement('label'); sw.className = 'switch';
+      const chk = document.createElement('input');
+      chk.type = 'checkbox'; chk.id = 'active-' + i; chk.checked = !!s.active; chk.disabled = !s.time;
+      chk.setAttribute('aria-label', 'Activar pastilla ' + (i + 1));
+      const track = document.createElement('span'); track.className = 'track';
+      sw.append(chk, track);
+
+      const time = document.createElement('input');
+      time.className = 'time-input'; time.id = 'time-' + i; time.type = 'time'; time.value = s.time || '';
+      time.setAttribute('aria-label', 'Hora de la pastilla ' + (i + 1));
+
+      time.addEventListener('input', () => {
+        chk.disabled = !time.value;
+        if (!time.value) chk.checked = false;
+        else if (!chk.dataset.touched) chk.checked = true;
+        row.classList.toggle('inactive', !chk.checked);
+        setDirty();
+      });
+      chk.addEventListener('change', () => { chk.dataset.touched = '1'; row.classList.toggle('inactive', !chk.checked); setDirty(); });
+      name.addEventListener('input', setDirty);
+
+      row.append(led, meta, sw, time);
+      form.append(row);
+    }
+  }
+
+  function markRinging(ringing) {
+    document.querySelectorAll('.slot').forEach((row) => row.classList.toggle('is-ringing', ringing.includes(Number(row.dataset.slot))));
+  }
+
+  function renderEvents(d) {
+    const list = $('events');
+    list.replaceChildren();
+    if (!d.events.length) {
+      const li = document.createElement('li'); li.className = 'empty'; li.textContent = 'Todavía no hay tomas registradas.';
+      list.append(li); return;
+    }
+    d.events.slice(0, 30).forEach((ev) => {
+      const li = document.createElement('li');
+      const dot = document.createElement('span'); dot.className = 'ev-led'; dot.style.setProperty('--c', LEDS[ev.slot] ? LEDS[ev.slot].color : 'var(--off)');
+      const what = document.createElement('div'); what.className = 'ev-what';
+      const b = document.createElement('b'); b.textContent = slotName(d.schedules.find((s) => s.slot === ev.slot) || { slot: ev.slot });
+      const when = document.createElement('div'); when.className = 'muted'; when.style.fontSize = '0.9rem';
+      when.textContent = dayTime.format(new Date(ev.created_at));
+      what.append(b, when);
+      const badge = document.createElement('span'); badge.className = 'badge ' + ev.type; badge.textContent = EVENT_LABEL[ev.type] || ev.type;
+      li.append(dot, what, badge);
+      list.append(li);
+    });
+  }
+
+  // ---------- acciones ----------
+  function setDirty() {
+    state.dirty = true;
+    $('saveBtn').disabled = false;
+    $('saveStatus').textContent = 'Tienes cambios sin guardar';
+  }
+
+  function readForm() {
+    const out = [];
+    for (let i = 0; i < SLOTS; i++) {
+      const time = $('time-' + i).value || null;
+      out.push({ slot: i, time, active: !!time && $('active-' + i).checked, label: $('name-' + i).value.trim() });
+    }
+    return out;
+  }
+
+  $('slotsForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (state.saving) return;
+    const schedules = readForm();
+    state.saving = true; $('saveBtn').disabled = true; $('saveStatus').textContent = 'Guardando…';
+    try {
+      if (state.demo) state.data.schedules = schedules;
+      else await api('/api/schedules', { method: 'PUT', body: JSON.stringify({ schedules }) });
+      state.dirty = false;
+      $('saveStatus').textContent = state.demo ? 'Guardado (demostración)' : 'Guardado. El pastillero lo recibe en menos de 30 s.';
+      toast('Horarios guardados');
+      if (state.demo) render(); else await load();
+    } catch (err) {
+      $('saveBtn').disabled = false;
+      $('saveStatus').textContent = err.message;
+    } finally { state.saving = false; }
+  });
+
+  $('silenceBtn').addEventListener('click', async () => {
+    const btn = $('silenceBtn'); btn.disabled = true; btn.textContent = 'Enviando…';
+    try {
+      if (state.demo) {
+        ringingSlots(state.data).forEach((slot) => state.data.events.unshift({ slot, type: 'silenced', created_at: new Date().toISOString() }));
+        state.data.device.ringing = false;
+        render();
+      } else {
+        await api('/api/silence', { method: 'POST', body: '{}' });
+        toast('Orden enviada. El pastillero se calla en unos segundos.');
+        await load();
+      }
+    } catch (err) { toast(err.message); }
+    finally { btn.disabled = false; btn.textContent = 'Silenciar alarma'; }
+  });
+
+  $('simulateBtn').addEventListener('click', () => {
+    const d = state.data;
+    const active = d.schedules.find((s) => s.active) || d.schedules[0];
+    d.events.unshift({ slot: active.slot, type: 'triggered', created_at: new Date().toISOString() });
+    d.device.ringing = true; d.device.last_seen_at = new Date().toISOString(); d.server_time = d.device.last_seen_at;
+    render();
+  });
+
+  $('keyForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const v = $('adminKey').value.trim();
+    if (!v) return;
+    storage.set(v); $('adminKey').value = '';
+    $('access').open = false;
+    state.demo = false; state.data = null; $('demoBand').hidden = true;
+    toast('Clave guardada');
+    load();
+  });
+
+  load();
+  setInterval(() => { if (!state.saving) load(); }, REFRESH_MS);
+  setInterval(() => { $('clockNow').textContent = hhmm.format(new Date()); if (state.data) { const n = nextDose(state.data.schedules); if (n) $('nextWhen').textContent = duration(n.diff) + ' · LED ' + LEDS[n.s.slot].color_name; } }, 15000);
+})();
+</script>
+</body>
+</html>
