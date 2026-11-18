@@ -19,7 +19,7 @@ Los conectores (MCP de Supabase, GitHub) **no tienen acceso** a estos recursos.
 - El conector MCP de Supabase apunta a otra cuenta (proyecto "VIVAR AI PLATAFORM"). **No usarlo ni tocar ese proyecto.**
 - SQL en Supabase: `POST https://api.supabase.com/v1/projects/ylhflnfqmeywktasmdda/database/query` con `{"query": "..."}`.
 - Las credenciales están en `web/.env` (fuera de git). Leerlas sin imprimirlas.
-- Git push: Windows tiene guardada la cuenta principal (`kevinvt610`), que da 403 en este repo. Por eso el remoto lleva el usuario en la URL (`https://901tovarvillamilkevindaniel-collab@github.com/...`) y `credential.useHttpPath=true`, para que el Git Credential Manager pida y guarde la cuenta collab solo para este repo.
+- Git push: la cuenta principal `kevinvt610` es **colaboradora** del repo (desde el 2026-11-18), así que `git push` funciona con la credencial que ya tiene Windows. El remoto usa la URL normal, sin usuario.
 
 ## Hardware
 - LEDs (compartimentos 1 a 5): GPIO 23, 19, 18, 17, 16 (verde, rojo, azul, amarillo, naranja).
