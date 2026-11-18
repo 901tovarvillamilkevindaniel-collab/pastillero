@@ -1,0 +1,12 @@
+{
+  "name": "pastillero-santos",
+  "private": true,
+  "description": "Portal y API del Pastillero Santos (Vercel + Supabase)",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test:api": "node ../tools/test_api.mjs"
+  }
+}
