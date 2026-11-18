@@ -1,0 +1,498 @@
+<title>Plan Pastillero Santos</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap">
+<style>
+  /* Layout: una columna de lectura (~68ch) con tiras anchas para diagramas; las 5 cavidades del pastillero como motivo recurrente */
+  :root {
+    --bg: #f3f6f7;
+    --surface: #ffffff;
+    --ink: #15202a;
+    --muted: #566774;
+    --line: #d5dee4;
+    --accent: #0a6b6a;
+    --accent-soft: #e0f0ef;
+    --alarm: #a85f00;
+    --alarm-soft: #fbefdc;
+    --code-bg: #eaf0f2;
+    --f-display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+    --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+    --f-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0e1418; --surface: #151e24; --ink: #e2eaee; --muted: #93a3ae; --line: #26333c;
+      --accent: #52c2bc; --accent-soft: #143331; --alarm: #f0a443; --alarm-soft: #3a2a12; --code-bg: #1b262d;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e1418; --surface: #151e24; --ink: #e2eaee; --muted: #93a3ae; --line: #26333c;
+    --accent: #52c2bc; --accent-soft: #143331; --alarm: #f0a443; --alarm-soft: #3a2a12; --code-bg: #1b262d;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: var(--f-body); font-size: 16px; line-height: 1.6;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 40px 72px;
+  }
+  .wrap { max-width: 920px; margin: 0 auto; display: grid; gap: 56px; }
+  .prose { max-width: 68ch; }
+  h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; line-height: 1.2; margin: 0; }
+  h1 { font-size: clamp(2rem, 5vw, 2.75rem); font-weight: 600; letter-spacing: -0.01em; }
+  h2 { font-size: 1.6rem; font-weight: 600; }
+  h3 { font-size: 1.15rem; font-weight: 600; }
+  p { margin: 0; }
+  section { display: grid; gap: 18px; }
+  .eyebrow { font-family: var(--f-mono); font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+  .lede { font-size: 1.12rem; color: var(--muted); max-width: 62ch; }
+  code, .mono { font-family: var(--f-mono); font-size: 0.88em; }
+  :not(pre) > code { background: var(--code-bg); padding: 1px 6px; border-radius: 4px; }
+  a { color: var(--accent); }
+
+  /* Cabecera con la tira de 5 cavidades */
+  header { display: grid; gap: 20px; }
+  .blister { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; max-width: 520px; }
+  .cell { border: 1.5px solid var(--line); border-radius: 999px; padding: 10px 4px; text-align: center; background: var(--surface); display: grid; gap: 2px; }
+  .cell b { font-family: var(--f-display); font-weight: 600; font-size: 0.95rem; }
+  .cell span { font-family: var(--f-mono); font-size: 0.72rem; color: var(--muted); }
+  .cell.on { border-color: var(--alarm); background: var(--alarm-soft); }
+  .cell.on span { color: var(--alarm); }
+  .caption { font-size: 0.85rem; color: var(--muted); }
+
+  /* Diagramas */
+  .diagram { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 20px; overflow-x: auto; }
+  .diagram pre.mermaid { margin: 0; background: transparent; min-width: 560px; }
+
+  /* Tres actores */
+  .actors { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .actor { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+  .actor .tag { font-family: var(--f-mono); font-size: 0.75rem; color: var(--muted); }
+  .actor ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+
+  /* Endpoints */
+  .endpoints { display: grid; gap: 14px; }
+  .ep { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: grid; gap: 12px; min-width: 0; }
+  .ep-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; }
+  .method { font-family: var(--f-mono); font-weight: 500; font-size: 0.78rem; padding: 2px 8px; border-radius: 4px; background: var(--accent-soft); color: var(--accent); }
+  .path { font-family: var(--f-mono); font-size: 1rem; font-weight: 500; overflow-wrap: anywhere; }
+  .who { margin-left: auto; font-size: 0.82rem; color: var(--muted); }
+  .who.device { color: var(--alarm); }
+  dl.meta { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 16px; margin: 0; font-size: 0.93rem; }
+  dl.meta dt { color: var(--muted); }
+  dl.meta dd { margin: 0; min-width: 0; }
+  pre.code { margin: 0; background: var(--code-bg); border-radius: 6px; padding: 12px 14px; overflow-x: auto; font-family: var(--f-mono); font-size: 0.82rem; line-height: 1.5; }
+  .group-label { font-family: var(--f-mono); font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); padding-top: 8px; }
+
+  /* Tablas */
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: 0.93rem; }
+  th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 600; font-size: 0.8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  tr:last-child td { border-bottom: none; }
+  td.num { font-variant-numeric: tabular-nums; font-family: var(--f-mono); white-space: nowrap; }
+
+  /* Callout */
+  .note { border-left: 3px solid var(--alarm); background: var(--alarm-soft); padding: 14px 16px; border-radius: 0 8px 8px 0; display: grid; gap: 6px; }
+  .note.ok { border-color: var(--accent); background: var(--accent-soft); }
+
+  /* Fases */
+  ol.phases { margin: 0; padding: 0; list-style: none; display: grid; gap: 12px; counter-reset: fase; }
+  ol.phases li { counter-increment: fase; display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 12px; align-items: start; }
+  ol.phases li::before { content: counter(fase); font-family: var(--f-display); font-weight: 600; width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--accent); color: var(--accent); display: grid; place-items: center; font-size: 0.95rem; }
+  ol.phases li div { display: grid; gap: 2px; }
+  ol.phases li p { color: var(--muted); font-size: 0.95rem; }
+
+  .tree { font-family: var(--f-mono); font-size: 0.85rem; line-height: 1.55; }
+  .tree .c { color: var(--muted); }
+
+  @media (max-width: 560px) {
+    .who { margin-left: 0; width: 100%; }
+    dl.meta { grid-template-columns: minmax(0, 1fr); }
+    dl.meta dt { margin-top: 6px; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header>
+    <span class="eyebrow">Plan de backend · v1</span>
+    <h1>Pastillero Santos</h1>
+    <p class="lede">Cómo se conectan el ESP32, Vercel y Supabase. Qué funciones serverless vamos a escribir, qué hace cada una y en qué orden las construimos.</p>
+    <div class="blister" aria-label="Las cinco cavidades del pastillero con su pin">
+      <div class="cell"><b>1</b><span>GPIO 23</span></div>
+      <div class="cell on"><b>2</b><span>GPIO 19</span></div>
+      <div class="cell"><b>3</b><span>GPIO 18</span></div>
+      <div class="cell"><b>4</b><span>GPIO 17</span></div>
+      <div class="cell"><b>5</b><span>GPIO 16</span></div>
+    </div>
+    <p class="caption">Cinco cavidades, cada una con su LED. Buzzer en GPIO 12, RTC DS1307 en I²C (SDA 21, SCL 22). En el ejemplo, la pastilla 2 está sonando.</p>
+  </header>
+
+  <section>
+    <span class="eyebrow">Vista general</span>
+    <h2>Tres piezas, una sola regla</h2>
+    <p class="prose">La alarma se decide <strong>dentro del ESP32</strong>, con su reloj RTC. La nube solo sirve para configurar los horarios desde el celular y para ver qué pasó. Así, si se cae el WiFi o Vercel, la pastilla suena igual.</p>
+    <div class="diagram">
+<pre class="mermaid">
+flowchart LR
+  F["Celular del familiar<br/>panel web"]
+  subgraph VERCEL["Vercel"]
+    P["Panel estático<br/>public/index.html"]
+    A["Funciones serverless<br/>/api/..."]
+  end
+  E["ESP32 DevKit V1<br/>MicroPython"]
+  H["RTC DS1307<br/>5 LEDs + buzzer"]
+  S[("Supabase<br/>Postgres")]
+  F -->|"abre la página"| P
+  P -->|"fetch HTTPS + x-admin-key"| A
+  E -->|"polling HTTPS cada 30 s + x-device-key"| A
+  A -->|"supabase-js + clave secreta"| S
+  E --- H
+</pre>
+    </div>
+  </section>
+
+  <section>
+    <span class="eyebrow">Responsabilidades</span>
+    <h2>Quién hace qué</h2>
+    <div class="actors">
+      <div class="actor">
+        <h3>ESP32</h3>
+        <span class="tag">MicroPython · firmware/</span>
+        <ul>
+          <li>Lee la hora del DS1307 y la corrige por NTP cuando hay WiFi.</li>
+          <li>Dispara la alarma: LED de la cavidad y buzzer intermitente.</li>
+          <li>Guarda los horarios en <code>schedules.json</code> (flash).</li>
+          <li>Consulta a Vercel cada 30 s, o cada 5 s mientras suena.</li>
+          <li>Guarda en una cola los eventos que no pudo enviar.</li>
+        </ul>
+      </div>
+      <div class="actor">
+        <h3>Vercel</h3>
+        <span class="tag">Node.js · web/</span>
+        <ul>
+          <li>Sirve el panel web para el celular.</li>
+          <li>Tiene las 5 funciones serverless, toda la lógica de la nube.</li>
+          <li>Revisa las claves del dispositivo y del administrador.</li>
+          <li>Es el único que habla con Supabase.</li>
+        </ul>
+      </div>
+      <div class="actor">
+        <h3>Supabase</h3>
+        <span class="tag">Postgres · supabase/</span>
+        <ul>
+          <li>Guarda horarios, historial, comandos y estado del dispositivo.</li>
+          <li>Valida los datos con restricciones <code>CHECK</code>.</li>
+          <li>RLS activado sin políticas: nadie entra con la clave pública.</li>
+          <li>Sin Edge Functions. Abajo se explica por qué.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <span class="eyebrow">Funciones serverless en Vercel</span>
+    <h2>Cinco endpoints</h2>
+    <p class="prose">Dos los llama el ESP32 y se protegen con <code>x-device-key</code>. Tres los llama el panel y se protegen con <code>x-admin-key</code>. Cada función es un archivo dentro de <code>web/api/</code>.</p>
+
+    <div class="endpoints">
+      <div class="group-label">Los llama el ESP32</div>
+
+      <article class="ep">
+        <div class="ep-head">
+          <span class="method">GET</span><span class="path">/api/device/sync?ringing=0|1</span>
+          <span class="who device">ESP32 · cada 30 s (5 s si suena)</span>
+        </div>
+        <p>Es el latido del dispositivo. Devuelve los horarios vigentes y los comandos pendientes, y anota que el ESP32 sigue vivo.</p>
+        <dl class="meta">
+          <dt>Lee</dt><dd><code>schedules</code></dd>
+          <dt>Escribe</dt><dd><code>commands</code> (marca como consumidos), <code>device_status</code> (último contacto, si está sonando)</dd>
+          <dt>Regla</dt><dd>Un comando con más de 2 minutos se descarta. Así, un "silenciar" viejo no apaga la alarma del día siguiente.</dd>
+        </dl>
+<pre class="code">{
+  "schedules": [
+    { "slot": 0, "time": "08:00", "active": true },
+    { "slot": 1, "time": null,    "active": false }
+  ],
+  "commands": ["silence"]
+}</pre>
+      </article>
+
+      <article class="ep">
+        <div class="ep-head">
+          <span class="method">POST</span><span class="path">/api/device/events</span>
+          <span class="who device">ESP32 · cuando pasa algo</span>
+        </div>
+        <p>Recibe lo que pasó en el pastillero: la alarma sonó, alguien la silenció o nadie la atendió. Acepta hasta 50 eventos de una vez, para vaciar la cola después de un corte de WiFi.</p>
+        <dl class="meta">
+          <dt>Escribe</dt><dd><code>events</code></dd>
+          <dt>Tipos</dt><dd><code>triggered</code> sonó · <code>silenced</code> confirmada · <code>missed</code> 10 min sin confirmar</dd>
+        </dl>
+<pre class="code">{ "events": [
+  { "slot": 1, "type": "triggered", "device_time": "2026-11-18 08:00:00" }
+] }</pre>
+      </article>
+
+      <div class="group-label">Los llama el panel web</div>
+
+      <article class="ep">
+        <div class="ep-head">
+          <span class="method">GET</span><span class="path">/api/state</span>
+          <span class="who">Panel · al abrir y cada 10 s</span>
+        </div>
+        <p>Todo lo que muestra la pantalla: los 5 horarios, si el pastillero está en línea (contacto hace menos de 90 s), si está sonando y los últimos 30 eventos.</p>
+        <dl class="meta">
+          <dt>Lee</dt><dd><code>schedules</code>, <code>device_status</code>, <code>events</code></dd>
+        </dl>
+      </article>
+
+      <article class="ep">
+        <div class="ep-head">
+          <span class="method">PUT</span><span class="path">/api/schedules</span>
+          <span class="who">Panel · botón "Guardar horarios"</span>
+        </div>
+        <p>Guarda los horarios de las cavidades. Una hora vacía (<code>null</code>) desactiva esa cavidad, algo que el sketch de Arduino no permitía. Rechaza todo lo que no sea <code>HH:MM</code> válido.</p>
+        <dl class="meta">
+          <dt>Escribe</dt><dd><code>schedules</code> (upsert por <code>slot</code>)</dd>
+          <dt>Llega al ESP32</dt><dd>En la siguiente consulta, como mucho 30 s después.</dd>
+        </dl>
+<pre class="code">{ "schedules": [ { "slot": 0, "time": "08:00" }, { "slot": 1, "time": null } ] }</pre>
+      </article>
+
+      <article class="ep">
+        <div class="ep-head">
+          <span class="method">POST</span><span class="path">/api/silence</span>
+          <span class="who">Panel · botón "Silenciar"</span>
+        </div>
+        <p>Deja un comando <code>silence</code> en la cola. El ESP32 lo recoge en la siguiente consulta: unos 5 s si está sonando.</p>
+        <dl class="meta">
+          <dt>Escribe</dt><dd><code>commands</code></dd>
+        </dl>
+      </article>
+    </div>
+
+    <div class="note ok">
+      <strong>Código compartido</strong>
+      <p><code>web/lib/supabase.js</code> crea el cliente con la clave secreta. <code>web/lib/auth.js</code> compara las claves en tiempo constante. <code>web/lib/constants.js</code> guarda las 5 cavidades, el formato de la hora y los tiempos límite.</p>
+    </div>
+  </section>
+
+  <section>
+    <span class="eyebrow">Supabase</span>
+    <h2>Solo base de datos, sin funciones</h2>
+    <p class="prose">Supabase también ofrece funciones serverless (Edge Functions), pero aquí no las usamos. El panel ya vive en Vercel, así que poner la API ahí mismo deja toda la lógica en un solo lugar, con un solo despliegue y una sola copia de las claves. Supabase queda como la base de datos y valida lo básico con restricciones de Postgres.</p>
+    <div class="diagram">
+<pre class="mermaid">
+erDiagram
+  schedules ||--o{ events : "slot"
+  schedules {
+    smallint slot PK "0 a 4"
+    text alarm_time "HH:MM o null"
+    boolean active
+    timestamptz updated_at
+  }
+  events {
+    bigint id PK
+    smallint slot "0 a 4"
+    text type "triggered, silenced, missed"
+    text device_time "hora del RTC"
+    timestamptz created_at
+  }
+  commands {
+    bigint id PK
+    text command "silence"
+    timestamptz created_at
+    timestamptz consumed_at "null = pendiente"
+  }
+  device_status {
+    smallint id PK "siempre 1"
+    timestamptz last_seen_at
+    boolean ringing
+  }
+</pre>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Tabla</th><th>Para qué</th><th>Filas</th></tr></thead>
+        <tbody>
+          <tr><td><code>schedules</code></td><td>La hora de cada cavidad. Se crea con 5 filas vacías.</td><td class="num">5 fijas</td></tr>
+          <tr><td><code>events</code></td><td>Historial: cuándo sonó, cuándo se confirmó, cuándo se perdió.</td><td class="num">≈ 6 por toma</td></tr>
+          <tr><td><code>commands</code></td><td>Órdenes del panel al ESP32 (por ahora solo silenciar).</td><td class="num">pocas</td></tr>
+          <tr><td><code>device_status</code></td><td>Último contacto del ESP32 y si está sonando.</td><td class="num">1 fija</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <span class="eyebrow">Flujo 1</span>
+    <h2>Programar un horario desde el celular</h2>
+    <div class="diagram">
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  actor F as Familiar
+  participant V as Vercel /api
+  participant S as Supabase
+  participant E as ESP32
+  F->>V: PUT /api/schedules, pastilla 1 a las 08:00
+  V->>S: upsert en schedules
+  S-->>V: ok
+  V-->>F: 200, horarios guardados
+  Note over E: hasta 30 s después
+  E->>V: GET /api/device/sync
+  V->>S: lee schedules, consume commands, actualiza device_status
+  V-->>E: schedules con 08:00
+  E->>E: guarda schedules.json en la flash
+</pre>
+    </div>
+  </section>
+
+  <section>
+    <span class="eyebrow">Flujo 2</span>
+    <h2>Suena la alarma y se silencia</h2>
+    <div class="diagram">
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant E as ESP32
+  participant V as Vercel /api
+  participant S as Supabase
+  actor F as Familiar
+  E->>E: el RTC marca 08:00 y coincide con la pastilla 1
+  E->>E: LED GPIO 23 y buzzer encendidos
+  E->>V: POST /api/device/events, triggered
+  V->>S: insert en events
+  Note over E: consulta cada 5 s mientras suena
+  F->>V: GET /api/state
+  V-->>F: sonando, pastilla 1
+  alt alguien pulsa Silenciar
+    F->>V: POST /api/silence
+    V->>S: insert en commands
+    E->>V: GET /api/device/sync?ringing=1
+    V->>S: marca el comando como consumido
+    V-->>E: commands silence
+    E->>E: apaga LED y buzzer
+    E->>V: POST /api/device/events, silenced
+  else nadie responde en 10 minutos
+    E->>E: apaga el buzzer, el LED sigue encendido
+    E->>V: POST /api/device/events, missed
+  end
+</pre>
+    </div>
+  </section>
+
+  <section>
+    <span class="eyebrow">Flujo 3</span>
+    <h2>Sin internet</h2>
+    <div class="diagram">
+<pre class="mermaid">
+sequenceDiagram
+  participant E as ESP32
+  participant V as Vercel /api
+  Note over E,V: el WiFi se cae
+  E->>E: usa los horarios de schedules.json
+  E->>E: a las 08:00 suena igual, por el RTC
+  E->>E: guarda los eventos en la cola, máximo 50
+  Note over E,V: el WiFi vuelve
+  E->>V: POST /api/device/events con toda la cola
+  E->>V: GET /api/device/sync
+  V-->>E: horarios al día
+</pre>
+    </div>
+    <div class="note">
+      <strong>Límite conocido</strong>
+      <p>Sin internet, el panel no puede silenciar la alarma. El buzzer se apaga solo a los 10 minutos y el evento queda marcado como <code>missed</code>. Si más adelante queremos silenciar sin red, la solución es un botón físico, que sería un cambio de hardware.</p>
+    </div>
+  </section>
+
+  <section>
+    <span class="eyebrow">Seguridad</span>
+    <h2>Dónde vive cada clave</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Clave</th><th>Dónde está</th><th>Qué abre</th></tr></thead>
+        <tbody>
+          <tr><td><code>DEVICE_KEY</code></td><td>Variables de entorno de Vercel y <code>firmware/config.py</code> (fuera de git)</td><td>Solo los dos endpoints <code>/api/device/*</code></td></tr>
+          <tr><td><code>ADMIN_KEY</code></td><td>Variables de entorno de Vercel. Se escribe una vez en el panel y el navegador la recuerda</td><td>Los endpoints del panel</td></tr>
+          <tr><td><code>SUPABASE_SECRET_KEY</code></td><td>Solo en las variables de entorno de Vercel</td><td>Toda la base de datos. Nunca va al ESP32 ni al navegador</td></tr>
+          <tr><td><code>SUPABASE_URL</code></td><td>Variables de entorno de Vercel</td><td>No es secreta</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="prose">El ESP32 usa HTTPS sin verificar el certificado, igual que <code>setInsecure()</code> en Arduino. El tráfico va cifrado, pero alguien dentro de tu misma red WiFi podría hacerse pasar por Vercel. Para un pastillero en casa es aceptable. Si después hace falta, se le carga al ESP32 el certificado raíz.</p>
+  </section>
+
+  <section>
+    <span class="eyebrow">Números</span>
+    <h2>Tiempos y volumen</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Parámetro</th><th>Valor</th><th>Efecto</th></tr></thead>
+        <tbody>
+          <tr><td>Consulta normal</td><td class="num">30 s</td><td>2.880 llamadas al día, unas 86.400 al mes</td></tr>
+          <tr><td>Consulta mientras suena</td><td class="num">5 s</td><td>Silenciar desde el celular tarda como mucho 5 s</td></tr>
+          <tr><td>Alarma sin confirmar</td><td class="num">10 min</td><td>Se apaga el buzzer y se registra <code>missed</code></td></tr>
+          <tr><td>Vida de un comando</td><td class="num">2 min</td><td>Un "silenciar" viejo se descarta</td></tr>
+          <tr><td>En línea si el último contacto fue hace menos de</td><td class="num">90 s</td><td>Tres consultas perdidas antes de mostrar "desconectado"</td></tr>
+          <tr><td>Cola de eventos sin red</td><td class="num">50</td><td>Más de 50 eventos sin red: se descartan los más viejos</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="caption">Todos se ajustan en <code>firmware/config.py</code> y <code>web/lib/constants.js</code>.</p>
+  </section>
+
+  <section>
+    <span class="eyebrow">Carpetas</span>
+    <h2>Cómo queda el repositorio</h2>
+<pre class="code tree">pastillero santos/
+├── firmware/            <span class="c"># MicroPython, se sube al ESP32</span>
+│   ├── main.py          <span class="c"># bucle principal</span>
+│   ├── config.py        <span class="c"># WiFi y claves (fuera de git)</span>
+│   ├── ds1307.py  clock.py  alarms.py  cloud.py  net.py
+├── web/                 <span class="c"># proyecto de Vercel</span>
+│   ├── api/device/sync.js   api/device/events.js
+│   ├── api/state.js   api/schedules.js   api/silence.js
+│   ├── lib/supabase.js  lib/auth.js  lib/constants.js
+│   ├── public/index.html  <span class="c"># panel para el celular</span>
+│   └── package.json
+├── supabase/schema.sql  <span class="c"># tablas, CHECK y RLS</span>
+└── docs/plan-backend.html</pre>
+  </section>
+
+  <section>
+    <span class="eyebrow">Orden de trabajo</span>
+    <h2>Paso a paso</h2>
+    <ol class="phases">
+      <li><div><h3>Prueba de hardware en MicroPython</h3><p>Encender los 5 LEDs, hacer sonar el buzzer y leer el DS1307 desde PyCharm. Todavía sin red.</p></div></li>
+      <li><div><h3>Base de datos en Supabase</h3><p>Crear el proyecto y correr <code>schema.sql</code>. Revisar que RLS esté activo.</p></div></li>
+      <li><div><h3>API en Vercel</h3><p>Los 5 endpoints y las variables de entorno. Probarlos con <code>curl</code> antes de tocar el ESP32.</p></div></li>
+      <li><div><h3>Panel web</h3><p>Horarios, botón de silenciar, estado en línea e historial, pensado para el celular.</p></div></li>
+      <li><div><h3>Firmware conectado</h3><p>WiFi, hora por NTP, consultas a Vercel, cola de eventos y horarios guardados en la flash.</p></div></li>
+      <li><div><h3>Prueba de punta a punta</h3><p>Una alarma a 2 minutos: silenciarla desde el celular, dejar que otra se pierda y desconectar el WiFi para ver que suena igual.</p></div></li>
+    </ol>
+  </section>
+
+  <section>
+    <span class="eyebrow">Por decidir</span>
+    <h2>Preguntas abiertas</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Tema</th><th>Propuesta</th></tr></thead>
+        <tbody>
+          <tr><td>Zona horaria</td><td>Un número fijo en <code>config.py</code> (por ejemplo −5). Hay que confirmar cuál es la tuya.</td></tr>
+          <tr><td>Tipo de buzzer</td><td>Activo (se enciende con HIGH) o pasivo (necesita PWM). El firmware soporta los dos con una opción.</td></tr>
+          <tr><td>Avisos al celular</td><td>Fuera de esta versión. Más adelante, una notificación cuando llegue un <code>missed</code>.</td></tr>
+          <tr><td>Historial viejo</td><td>Sin limpieza al principio. Más adelante, un <code>pg_cron</code> en Supabase que borre eventos de más de 90 días.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
