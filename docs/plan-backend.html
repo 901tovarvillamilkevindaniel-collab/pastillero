@@ -150,7 +150,7 @@ flowchart LR
   H["5 LEDs + buzzer"]
   S[("Supabase<br/>Postgres")]
   F -->|"abre la página"| P
-  P -->|"fetch HTTPS + x-admin-key"| A
+  P -->|"fetch HTTPS, acceso libre"| A
   E -->|"polling HTTPS cada 30 s + x-device-key"| A
   A -.->|"alarmas + hora de Bogotá"| E
   A -->|"supabase-js + clave secreta"| S
@@ -201,7 +201,7 @@ flowchart LR
   <section>
     <span class="eyebrow">Funciones serverless en Vercel</span>
     <h2>Siete endpoints</h2>
-    <p class="prose">Dos los llama el ESP32 y se protegen con <code>x-device-key</code>. Cinco los llama el portal y se protegen con <code>x-admin-key</code>. Cada función es un archivo dentro de <code>web/api/</code>.</p>
+    <p class="prose">Dos los llama el ESP32 y se protegen con <code>x-device-key</code>. Cinco los llama el portal y son de <strong>acceso libre</strong>: no piden clave. Cada función es un archivo dentro de <code>web/api/</code>.</p>
 
     <div class="endpoints">
       <div class="group-label">Los llama el ESP32</div>
@@ -454,7 +454,7 @@ sequenceDiagram
         <thead><tr><th>Clave</th><th>Dónde está</th><th>Qué abre</th></tr></thead>
         <tbody>
           <tr><td><code>DEVICE_KEY</code></td><td>Variables de entorno de Vercel y <code>firmware/config.py</code> (fuera de git)</td><td>Solo los dos endpoints <code>/api/device/*</code></td></tr>
-          <tr><td><code>ADMIN_KEY</code></td><td>Variables de entorno de Vercel. Se escribe una vez en el panel y el navegador la recuerda</td><td>Los endpoints del panel</td></tr>
+          <tr><td>Portal</td><td>Sin clave: acceso libre para quien tenga la URL</td><td>Crear, editar, borrar y silenciar alarmas</td></tr>
           <tr><td><code>SUPABASE_SECRET_KEY</code></td><td>Solo en las variables de entorno de Vercel</td><td>Toda la base de datos. Nunca va al ESP32 ni al navegador</td></tr>
           <tr><td><code>SUPABASE_URL</code></td><td>Variables de entorno de Vercel</td><td>No es secreta</td></tr>
         </tbody>

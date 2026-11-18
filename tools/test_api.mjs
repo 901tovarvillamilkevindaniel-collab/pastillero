@@ -15,8 +15,7 @@ for (const line of readFileSync(join(web, '.env'), 'utf8').split(/\r?\n/)) {
   const m = line.match(/^([A-Z0-9_]+)=(.*)$/);
   if (m && !(m[1] in process.env)) process.env[m[1]] = m[2];
 }
-const ADMIN = process.env.ADMIN_KEY;
-const DEVICE = process.env.DEVICE_KEY;
+const DEVICE = process.env.DEVICE_KEY;   // el portal es de acceso libre; solo el ESP32 usa clave
 
 const load = async (p) => (await import(pathToFileURL(join(web, p)).href)).default;
 const api = {
@@ -30,7 +29,7 @@ const api = {
 const db = await import(pathToFileURL(join(web, 'lib/db.js')).href);
 
 // ---- petición simulada ----
-async function call(handler, { method = 'GET', key, keyHeader = 'x-admin-key', body, query = {} } = {}) {
+async function call(handler, { method = 'GET', key, keyHeader = 'x-device-key', body, query = {} } = {}) {
   const req = { method, query, body, headers: key ? { [keyHeader]: key } : {} };
   const res = {
     statusCode: 200, body: undefined, headers: {},
@@ -42,7 +41,7 @@ async function call(handler, { method = 'GET', key, keyHeader = 'x-admin-key', b
   await handler(req, res);
   return res;
 }
-const admin = (h, o = {}) => call(h, { ...o, key: ADMIN });
+const admin = (h, o = {}) => call(h, o);   // portal: sin clave
 const device = (h, o = {}) => call(h, { ...o, key: DEVICE, keyHeader: 'x-device-key' });
 
 // ---- mini framework ----
@@ -57,15 +56,15 @@ const start = new Date(Date.now() - 1000).toISOString();
 const created = [];
 
 try {
-  console.log('\nSeguridad');
+  console.log('\nAcceso');
   let r = await call(api.state);
-  check('sin clave -> 401', r.statusCode === 401, show(r));
-  r = await call(api.state, { key: 'clave-falsa' });
-  check('clave falsa -> 401', r.statusCode === 401, show(r));
-  r = await call(api.state, { key: DEVICE, keyHeader: 'x-admin-key' });
-  check('clave del ESP32 no abre el portal -> 401', r.statusCode === 401, show(r));
-  r = await call(api.sync, { key: ADMIN, keyHeader: 'x-device-key' });
-  check('clave del portal no abre el ESP32 -> 401', r.statusCode === 401, show(r));
+  check('portal sin clave -> 200 (acceso libre)', r.statusCode === 200, show(r));
+  r = await call(api.sync);
+  check('ESP32 sin clave -> 401', r.statusCode === 401, show(r));
+  r = await call(api.sync, { key: 'clave-falsa', keyHeader: 'x-device-key' });
+  check('ESP32 con clave falsa -> 401', r.statusCode === 401, show(r));
+  r = await call(api.events, { method: 'POST', body: { events: [{ slot: 0, type: 'missed' }] } });
+  check('eventos sin clave del ESP32 -> 401', r.statusCode === 401, show(r));
   r = await admin(api.state, { method: 'POST' });
   check('método incorrecto -> 405', r.statusCode === 405 && r.headers.Allow === 'GET', show(r));
 

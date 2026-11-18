@@ -12,7 +12,7 @@ for (const line of readFileSync(join(root, 'web', '.env'), 'utf8').split(/\r?\n/
 }
 const BASE = (process.argv[2] || 'https://pastillero-test11-c4c7.vercel.app').replace(/\/$/, '');
 
-async function req(path, { method = 'GET', key, header = 'x-admin-key', body } = {}) {
+async function req(path, { method = 'GET', key, header = 'x-device-key', body } = {}) {
   const headers = { 'Content-Type': 'application/json' };
   if (key) headers[header] = key;
   const r = await fetch(BASE + path, { method, headers, body: body ? JSON.stringify(body) : undefined });
@@ -20,7 +20,7 @@ async function req(path, { method = 'GET', key, header = 'x-admin-key', body } =
   let json = null; try { json = text ? JSON.parse(text) : null; } catch {}
   return { status: r.status, json, text, type: r.headers.get('content-type') || '' };
 }
-const admin = (p, o = {}) => req(p, { ...o, key: env.ADMIN_KEY });
+const admin = (p, o = {}) => req(p, o);   // portal: acceso libre, sin clave
 const device = (p, o = {}) => req(p, { ...o, key: env.DEVICE_KEY, header: 'x-device-key' });
 
 let pass = 0, fail = 0;
@@ -30,8 +30,9 @@ console.log(`Probando ${BASE}\n`);
 let r = await req('/');
 check('portal responde HTML', r.status === 200 && r.type.includes('text/html'), `(HTTP ${r.status})`);
 check('portal es el completo (tiene el modal)', r.text.includes('id="alarmDialog"'), '(es otra versión)');
-r = await req('/api/state');
-check('API sin clave -> 401', r.status === 401, `(HTTP ${r.status} ${r.text.slice(0, 120)})`);
+check('portal sin pantalla de clave', !r.text.includes('id="login"') && !r.text.includes('x-admin-key'));
+r = await req('/api/device/sync');
+check('ESP32 sin clave -> 401', r.status === 401, `(HTTP ${r.status} ${r.text.slice(0, 120)})`);
 r = await admin('/api/state');
 check('GET /api/state -> 200', r.status === 200 && Array.isArray(r.json?.alarms), `(HTTP ${r.status} ${r.text.slice(0, 160)})`);
 r = await device('/api/device/sync?ringing=0&fw=prueba-prod');

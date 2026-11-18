@@ -4,7 +4,7 @@ import { select } from '../lib/db.js';
 import { ALARM_COLUMNS, HISTORY_LIMIT } from '../lib/constants.js';
 import { deviceClock } from '../lib/clock.js';
 
-export default endpoint({ methods: ['GET'], auth: 'admin' }, async () => {
+export default endpoint({ methods: ['GET'], auth: 'public' }, async () => {
   const [alarms, status, events] = await Promise.all([
     select(`alarms?select=${ALARM_COLUMNS}&order=alarm_time.asc,slot.asc`),
     select('device_status?select=last_seen_at,ringing,firmware&id=eq.1'),

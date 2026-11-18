@@ -7,7 +7,7 @@ import { parseAlarm, parseId } from '../../lib/validate.js';
 
 const notFound = () => new HttpError(404, 'Esa alarma no existe. Puede que ya se haya eliminado.');
 
-export default endpoint({ methods: ['PUT', 'DELETE'], auth: 'admin' }, async (req) => {
+export default endpoint({ methods: ['PUT', 'DELETE'], auth: 'public' }, async (req) => {
   const id = parseId(req.query.id);
 
   if (req.method === 'DELETE') {

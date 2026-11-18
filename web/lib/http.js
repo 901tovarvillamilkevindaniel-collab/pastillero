@@ -8,8 +8,8 @@ export class HttpError extends Error {
   }
 }
 
+// El portal es de acceso libre (auth: 'public'). Solo el ESP32 usa clave.
 const KEYS = {
-  admin: { header: 'x-admin-key', env: 'ADMIN_KEY' },   // portal
   device: { header: 'x-device-key', env: 'DEVICE_KEY' }, // ESP32
 };
 
@@ -21,6 +21,7 @@ function sameKey(a, b) {
 }
 
 function authorized(req, who) {
+  if (who === 'public') return true;
   const { header, env } = KEYS[who];
   const expected = process.env[env];
   if (!expected) {
@@ -41,7 +42,7 @@ function fromDb(err) {
 
 /**
  * Envuelve un handler con método permitido, clave y manejo de errores.
- * @param {{methods: string[], auth: 'admin'|'device'}} opts
+ * @param {{methods: string[], auth: 'public'|'device'}} opts
  * @param {(req, res) => Promise<{status?: number, body?: unknown}|void>} fn
  */
 export function endpoint({ methods, auth }, fn) {

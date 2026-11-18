@@ -5,7 +5,7 @@ import { select, insert } from '../../lib/db.js';
 import { ALARM_COLUMNS, MAX_ALARMS } from '../../lib/constants.js';
 import { parseAlarm } from '../../lib/validate.js';
 
-export default endpoint({ methods: ['GET', 'POST'], auth: 'admin' }, async (req) => {
+export default endpoint({ methods: ['GET', 'POST'], auth: 'public' }, async (req) => {
   if (req.method === 'GET') {
     return { body: { alarms: await select(`alarms?select=${ALARM_COLUMNS}&order=alarm_time.asc,slot.asc`) } };
   }

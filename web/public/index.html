@@ -139,11 +139,6 @@
   .badge.missed { background: var(--alarm-soft); color: var(--alarm); }
 
   /* Acceso */
-  .login { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px 18px; display: grid; gap: 10px; }
-  body.locked .app-only { display: none !important; }
-  .logout { text-align: center; }
-  .key-form { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
-  .key-form input { flex: 1 1 200px; min-width: 0; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--bg); }
 
   /* Botones */
   .btn { min-height: 44px; padding: 0 18px; border-radius: 10px; border: 1.5px solid var(--accent); background: var(--surface); color: var(--accent); font-weight: 700; cursor: pointer; }
@@ -203,7 +198,7 @@
   }
 </style>
 </head>
-<body class="locked">
+<body>
 <main>
   <header>
     <div class="head-row">
@@ -213,25 +208,25 @@
     <div class="clock"><span class="mono" id="clockNow">--:--</span><span class="muted">hora de Bogotá</span></div>
   </header>
 
-  <div class="demo app-only" id="demoBand" hidden>
+  <div class="demo" id="demoBand" hidden>
     <span>Modo demostración: la API todavía no existe, los datos son de ejemplo.</span>
     <button class="btn small" id="simulateBtn" type="button">Simular alarma</button>
   </div>
 
-  <section class="ringing-card app-only" id="ringingCard" hidden aria-live="assertive">
+  <section class="ringing-card" id="ringingCard" hidden aria-live="assertive">
     <p class="title" id="ringingTitle">Sonando</p>
     <p class="where" id="ringingWhere"></p>
     <p class="muted">El pastillero no detecta cuándo se saca la pastilla. Cuando la persona se la tome, confírmalo aquí y el pastillero se calla. Si nadie confirma, el buzzer se apaga solo a los 10 minutos y queda como "Sin confirmar".</p>
     <button class="btn-taken" id="takenBtn" type="button"><span>Ya se la tomó</span><small>Silenciar alarma</small></button>
   </section>
 
-  <section class="next app-only" id="nextCard" aria-live="polite">
+  <section class="next" id="nextCard" aria-live="polite">
     <span class="label">Próxima toma</span>
     <span class="what" id="nextWhat">Sin alarmas activas</span>
     <span class="muted" id="nextWhen"></span>
   </section>
 
-  <section class="section app-only" aria-labelledby="alarmsTitle">
+  <section class="section" aria-labelledby="alarmsTitle">
     <div class="section-head">
       <h2 id="alarmsTitle">Alarmas</h2>
       <span class="muted" style="font-size:0.9rem" id="alarmsCount"></span>
@@ -239,25 +234,14 @@
     <div class="alarms" id="alarms"></div>
   </section>
 
-  <section class="section app-only" aria-labelledby="historyTitle">
+  <section class="section" aria-labelledby="historyTitle">
     <h2 id="historyTitle">Historial</h2>
     <ul class="events" id="events"></ul>
   </section>
 
-  <section class="login" id="login" hidden>
-    <h2>Entrar</h2>
-    <p class="muted">Escribe la clave del pastillero. Se guarda solo en este celular.</p>
-    <form class="key-form" id="keyForm">
-      <input type="password" id="adminKey" autocomplete="current-password" placeholder="Clave del pastillero" aria-label="Clave del pastillero">
-      <button class="btn primary" type="submit">Entrar</button>
-    </form>
-    <p class="form-error" id="loginError" hidden></p>
-  </section>
-
-  <p class="logout app-only" id="logoutRow" hidden><button class="btn small ghost" id="logoutBtn" type="button">Salir de este celular</button></p>
 </main>
 
-<div class="bottombar app-only">
+<div class="bottombar">
   <div class="bottombar-inner">
     <button class="btn primary btn-new" id="newBtn" type="button">+ Nueva alarma</button>
   </div>
@@ -328,37 +312,15 @@
   const TZ = 'America/Bogota';
   const ONLINE_MS = 90 * 1000;
   const REFRESH_MS = 10 * 1000;
-  const KEY_STORE = 'pastillero.adminKey';
   const EVENT_LABEL = { triggered: 'Sonó', silenced: 'Tomada', missed: 'Sin confirmar' };
 
   const $ = (id) => document.getElementById(id);
-  const state = { demo: false, data: null, nextId: 100, editingId: null, busy: false, locked: true };
+  const state = { demo: false, data: null, nextId: 100, editingId: null, busy: false };
+
+  // El portal es de acceso libre: borrar la clave que guardaron versiones anteriores
+  try { localStorage.removeItem('pastillero.adminKey'); } catch {}
 
   // ---------- utilidades ----------
-  const storage = {
-    get() { try { return localStorage.getItem(KEY_STORE) || ''; } catch { return ''; } },
-    set(v) { try { localStorage.setItem(KEY_STORE, v); } catch {} },
-    clear() { try { localStorage.removeItem(KEY_STORE); } catch {} },
-  };
-
-  // Sin clave válida no se muestra nada del pastillero: solo el cuadro para entrar
-  function lock(msg) {
-    state.locked = true;
-    state.data = null;
-    document.body.classList.add('locked');
-    $('login').hidden = false;
-    $('logoutRow').hidden = true;
-    $('deviceChip').className = 'chip';
-    $('deviceText').textContent = 'Sin acceso';
-    $('loginError').textContent = msg || '';
-    $('loginError').hidden = !msg;
-  }
-  function unlock() {
-    state.locked = false;
-    document.body.classList.remove('locked');
-    $('login').hidden = true;
-    $('logoutRow').hidden = state.demo;
-  }
   const hhmm = new Intl.DateTimeFormat('es-CO', { timeZone: TZ, hour: '2-digit', minute: '2-digit', hour12: false });
   const wdFmt = new Intl.DateTimeFormat('en-US', { timeZone: TZ, weekday: 'short' });
   const dayTime = new Intl.DateTimeFormat('es-CO', { timeZone: TZ, weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false });
@@ -440,11 +402,10 @@
   async function api(path, opts = {}) {
     const res = await fetch(path, {
       ...opts,
-      headers: { 'Content-Type': 'application/json', 'x-admin-key': storage.get() },
+      headers: { 'Content-Type': 'application/json' },
       cache: 'no-store',
     });
     const ct = res.headers.get('content-type') || '';
-    if (res.status === 401) { const e = new Error('La clave de acceso no es correcta.'); e.code = 401; throw e; }
     if (res.status === 204) return null;
     if (!ct.includes('application/json')) { const e = new Error('No hay API en este servidor.'); e.code = 'noapi'; throw e; }
     const body = await res.json();
@@ -479,15 +440,14 @@
     if (state.demo) { render(); return; }
     try {
       state.data = await api('/api/state');
-      unlock();
       render();
     } catch (e) {
-      if (e.code === 401) { lock(storage.get() ? 'Esa clave no es correcta.' : ''); return; }
-      if (!state.data) { startDemo(); return; }
+      if (!state.data && (e.code === 'noapi' || !/^https?:$/.test(location.protocol))) { startDemo(); return; }
+      if (!state.data) { $('deviceText').textContent = 'Sin conexión'; toast(e.message); return; }
       toast('No se pudo actualizar. Revisa tu conexión.');
     }
   }
-  function startDemo() { state.demo = true; state.data = demoData(); $('demoBand').hidden = false; unlock(); render(); }
+  function startDemo() { state.demo = true; state.data = demoData(); $('demoBand').hidden = false; render(); }
   async function afterChange(msg) { if (msg) toast(msg); if (state.demo) render(); else await load(); }
 
   // ---------- estado derivado ----------
@@ -706,25 +666,9 @@
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
-  $('keyForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const v = $('adminKey').value.trim();
-    if (!v) { lock('Escribe la clave.'); return; }
-    storage.set(v); $('adminKey').value = '';
-    state.demo = false; state.data = null; $('demoBand').hidden = true;
-    await load();
-    if (!state.locked) toast('Listo, entraste');
-  });
-
-  $('logoutBtn').addEventListener('click', () => {
-    storage.clear();
-    lock('');
-    toast('Saliste. Este celular ya no guarda la clave.');
-  });
-
   buildPickers();
   load();
-  setInterval(() => { if (!state.busy && !state.locked && !$('alarmDialog').open) load(); }, REFRESH_MS);
+  setInterval(() => { if (!state.busy && !$('alarmDialog').open) load(); }, REFRESH_MS);
   setInterval(() => { $('clockNow').textContent = hhmm.format(new Date()); if (state.data) renderNext(state.data); }, 15000);
 })();
 </script>
