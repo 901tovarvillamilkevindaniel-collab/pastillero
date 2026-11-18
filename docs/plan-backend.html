@@ -121,7 +121,7 @@
 <div class="wrap">
 
   <header>
-    <span class="eyebrow">Plan de backend · v2</span>
+    <span class="eyebrow">Plan de backend · v3</span>
     <h1>Pastillero Santos</h1>
     <p class="lede">Cómo se conectan el ESP32, Vercel y Supabase. Qué funciones serverless vamos a escribir, qué hace cada una y en qué orden las construimos.</p>
     <div class="blister" aria-label="Las cinco cavidades del pastillero con su pin">
@@ -137,7 +137,7 @@
   <section>
     <span class="eyebrow">Vista general</span>
     <h2>Tres piezas, una sola regla</h2>
-    <p class="prose">La alarma se decide <strong>dentro del ESP32</strong>, con su reloj interno. Vercel le manda la hora de Bogotá en cada consulta, y además sirve para configurar los horarios desde el celular y ver qué pasó. Si se cae el WiFi o Vercel, la pastilla suena igual mientras el ESP32 no pierda la corriente.</p>
+    <p class="prose">La alarma se decide <strong>dentro del ESP32</strong>, con su reloj interno. Vercel le manda la hora de Bogotá en cada consulta, y además sirve para crear las alarmas desde el celular, confirmar las tomas y ver qué pasó. Si se cae el WiFi o Vercel, la pastilla suena igual mientras el ESP32 no pierda la corriente.</p>
     <div class="diagram">
 <pre class="mermaid">
 flowchart LR
@@ -152,7 +152,7 @@ flowchart LR
   F -->|"abre la página"| P
   P -->|"fetch HTTPS + x-admin-key"| A
   E -->|"polling HTTPS cada 30 s + x-device-key"| A
-  A -.->|"horarios + hora de Bogotá"| E
+  A -.->|"alarmas + hora de Bogotá"| E
   A -->|"supabase-js + clave secreta"| S
   E --- H
 </pre>
@@ -169,7 +169,7 @@ flowchart LR
         <ul>
           <li>Pone en hora su reloj interno con la hora de Bogotá que le manda Vercel.</li>
           <li>Dispara la alarma: LED de la cavidad y buzzer intermitente.</li>
-          <li>Guarda los horarios en <code>schedules.json</code> (flash).</li>
+          <li>Guarda las alarmas en <code>alarms.json</code> (flash) y revisa el día de la semana.</li>
           <li>Consulta a Vercel cada 30 s, o cada 5 s mientras suena.</li>
           <li>Guarda en una cola los eventos que no pudo enviar.</li>
         </ul>
@@ -180,7 +180,7 @@ flowchart LR
         <ul>
           <li>Sirve el panel web para el celular.</li>
           <li>Da la hora: la calcula en la zona <code>America/Bogota</code> y se la manda al ESP32.</li>
-          <li>Tiene las 5 funciones serverless, toda la lógica de la nube.</li>
+          <li>Tiene las funciones serverless (7 endpoints), toda la lógica de la nube.</li>
           <li>Revisa las claves del dispositivo y del administrador.</li>
           <li>Es el único que habla con Supabase.</li>
         </ul>
@@ -189,7 +189,7 @@ flowchart LR
         <h3>Supabase</h3>
         <span class="tag">Postgres · supabase/</span>
         <ul>
-          <li>Guarda horarios, historial, comandos y estado del dispositivo.</li>
+          <li>Guarda alarmas, historial, comandos y estado del dispositivo.</li>
           <li>Valida los datos con restricciones <code>CHECK</code>.</li>
           <li>RLS activado sin políticas: nadie entra con la clave pública.</li>
           <li>Sin Edge Functions. Abajo se explica por qué.</li>
@@ -200,8 +200,8 @@ flowchart LR
 
   <section>
     <span class="eyebrow">Funciones serverless en Vercel</span>
-    <h2>Cinco endpoints</h2>
-    <p class="prose">Dos los llama el ESP32 y se protegen con <code>x-device-key</code>. Tres los llama el panel y se protegen con <code>x-admin-key</code>. Cada función es un archivo dentro de <code>web/api/</code>.</p>
+    <h2>Siete endpoints</h2>
+    <p class="prose">Dos los llama el ESP32 y se protegen con <code>x-device-key</code>. Cinco los llama el portal y se protegen con <code>x-admin-key</code>. Cada función es un archivo dentro de <code>web/api/</code>.</p>
 
     <div class="endpoints">
       <div class="group-label">Los llama el ESP32</div>
@@ -211,18 +211,18 @@ flowchart LR
           <span class="method">GET</span><span class="path">/api/device/sync?ringing=0|1</span>
           <span class="who device">ESP32 · cada 30 s (5 s si suena)</span>
         </div>
-        <p>Es el latido del dispositivo. Devuelve la hora de Bogotá, los horarios vigentes y los comandos pendientes, y anota que el ESP32 sigue vivo.</p>
+        <p>Es el latido del dispositivo. Devuelve la hora de Bogotá, las alarmas activas y los comandos pendientes, y anota que el ESP32 sigue vivo.</p>
         <dl class="meta">
-          <dt>Lee</dt><dd><code>schedules</code></dd>
+          <dt>Lee</dt><dd><code>alarms</code> (solo las activas)</dd>
           <dt>Escribe</dt><dd><code>commands</code> (marca como consumidos), <code>device_status</code> (último contacto, si está sonando)</dd>
           <dt>Regla</dt><dd>Un comando con más de 2 minutos se descarta. Así, un "silenciar" viejo no apaga la alarma del día siguiente.</dd>
           <dt>Hora</dt><dd>Vercel la manda como segundos desde 1970 (<code>epoch</code>) más el desfase de Bogotá (−300 min). El ESP32 ajusta su reloj con cada respuesta. El viaje por la red le resta 1 a 2 s, que no importa para alarmas por minuto.</dd>
         </dl>
 <pre class="code">{
   "clock": { "epoch": 1795006800, "utc_offset_min": -300, "local": "2026-11-18T08:00:00-05:00" },
-  "schedules": [
-    { "slot": 0, "time": "08:00", "active": true },
-    { "slot": 1, "time": null,    "active": false }
+  "alarms": [
+    { "id": 1, "slot": 0, "time": "07:00", "days": [1,2,3,4,5,6,7] },
+    { "id": 5, "slot": 3, "time": "09:00", "days": [7] }
   ],
   "commands": ["silence"]
 }</pre>
@@ -236,45 +236,67 @@ flowchart LR
         <p>Recibe lo que pasó en el pastillero: la alarma sonó, alguien la silenció o nadie la atendió. Acepta hasta 50 eventos de una vez, para vaciar la cola después de un corte de WiFi.</p>
         <dl class="meta">
           <dt>Escribe</dt><dd><code>events</code></dd>
-          <dt>Tipos</dt><dd><code>triggered</code> sonó · <code>silenced</code> confirmada · <code>missed</code> 10 min sin confirmar</dd>
+          <dt>Tipos</dt><dd><code>triggered</code> sonó · <code>silenced</code> tomada (confirmada en el celular) · <code>missed</code> 10 min sin confirmar</dd>
         </dl>
 <pre class="code">{ "events": [
-  { "slot": 1, "type": "triggered", "device_time": "2026-11-18 08:00:00" }
+  { "alarm_id": 1, "slot": 0, "type": "triggered", "device_time": "2026-11-18 07:00:00" }
 ] }</pre>
       </article>
 
-      <div class="group-label">Los llama el panel web</div>
+      <div class="group-label">Los llama el portal</div>
 
       <article class="ep">
         <div class="ep-head">
           <span class="method">GET</span><span class="path">/api/state</span>
-          <span class="who">Panel · al abrir y cada 10 s</span>
+          <span class="who">Portal · al abrir y cada 10 s</span>
         </div>
-        <p>Todo lo que muestra la pantalla: los 5 horarios, si el pastillero está en línea (contacto hace menos de 90 s), si está sonando y los últimos 30 eventos.</p>
+        <p>Todo lo que muestra la pantalla: las alarmas, si el pastillero está en línea (contacto hace menos de 90 s), si está sonando y los últimos 30 eventos.</p>
         <dl class="meta">
-          <dt>Lee</dt><dd><code>schedules</code>, <code>device_status</code>, <code>events</code></dd>
+          <dt>Lee</dt><dd><code>alarms</code>, <code>device_status</code>, <code>events</code></dd>
         </dl>
       </article>
 
       <article class="ep">
         <div class="ep-head">
-          <span class="method">PUT</span><span class="path">/api/schedules</span>
-          <span class="who">Panel · botón "Guardar horarios"</span>
+          <span class="method">POST</span><span class="path">/api/alarms</span>
+          <span class="who">Portal · modal "Nueva alarma"</span>
         </div>
-        <p>Guarda los horarios de las cavidades. Una hora vacía (<code>null</code>) desactiva esa cavidad, algo que el sketch de Arduino no permitía. Rechaza todo lo que no sea <code>HH:MM</code> válido.</p>
+        <p>Crea una alarma: compartimento, medicamento, hora y días. Un mismo compartimento puede tener varias alarmas al día, pero no dos a la misma hora. Máximo 20 alarmas.</p>
         <dl class="meta">
-          <dt>Escribe</dt><dd><code>schedules</code> (upsert por <code>slot</code>)</dd>
+          <dt>Escribe</dt><dd><code>alarms</code></dd>
           <dt>Llega al ESP32</dt><dd>En la siguiente consulta, como mucho 30 s después.</dd>
         </dl>
-<pre class="code">{ "schedules": [ { "slot": 0, "time": "08:00" }, { "slot": 1, "time": null } ] }</pre>
+<pre class="code">{ "slot": 0, "time": "07:00", "label": "Losartán 50 mg", "days": [1,2,3,4,5,6,7], "active": true }</pre>
+      </article>
+
+      <article class="ep">
+        <div class="ep-head">
+          <span class="method">PUT</span><span class="path">/api/alarms/:id</span>
+          <span class="who">Portal · editar o interruptor</span>
+        </div>
+        <p>Cambia una alarma. Acepta cambios parciales: el interruptor de la lista solo manda <code>{ "active": false }</code>.</p>
+        <dl class="meta">
+          <dt>Escribe</dt><dd><code>alarms</code> (<code>updated_at</code> se actualiza solo)</dd>
+        </dl>
+      </article>
+
+      <article class="ep">
+        <div class="ep-head">
+          <span class="method">DELETE</span><span class="path">/api/alarms/:id</span>
+          <span class="who">Portal · "Eliminar" (doble toque)</span>
+        </div>
+        <p>Borra la alarma. Su historial se conserva: los eventos quedan con <code>alarm_id</code> vacío y guardan el compartimento.</p>
+        <dl class="meta">
+          <dt>Escribe</dt><dd><code>alarms</code></dd>
+        </dl>
       </article>
 
       <article class="ep">
         <div class="ep-head">
           <span class="method">POST</span><span class="path">/api/silence</span>
-          <span class="who">Panel · botón "Silenciar"</span>
+          <span class="who">Portal · botón "Ya se la tomó"</span>
         </div>
-        <p>Deja un comando <code>silence</code> en la cola. El ESP32 lo recoge en la siguiente consulta: unos 5 s si está sonando.</p>
+        <p>El pastillero no tiene sensor para saber cuándo se saca la pastilla, así que la toma se confirma desde el celular. Deja un comando <code>silence</code> en la cola; el ESP32 lo recoge en unos 5 s, se calla y registra el evento <code>silenced</code>.</p>
         <dl class="meta">
           <dt>Escribe</dt><dd><code>commands</code></dd>
         </dl>
@@ -283,7 +305,7 @@ flowchart LR
 
     <div class="note ok">
       <strong>Código compartido</strong>
-      <p><code>web/lib/supabase.js</code> crea el cliente con la clave secreta. <code>web/lib/auth.js</code> compara las claves en tiempo constante. <code>web/lib/constants.js</code> guarda las 5 cavidades, el formato de la hora y los tiempos límite.</p>
+      <p><code>web/lib/supabase.js</code> crea el cliente con la clave secreta. <code>web/lib/auth.js</code> compara las claves en tiempo constante. <code>web/lib/constants.js</code> guarda los 5 compartimentos, el formato de la hora, el máximo de alarmas y los tiempos límite.</p>
     </div>
   </section>
 
@@ -294,15 +316,19 @@ flowchart LR
     <div class="diagram">
 <pre class="mermaid">
 erDiagram
-  schedules ||--o{ events : "slot"
-  schedules {
-    smallint slot PK "0 a 4"
-    text alarm_time "HH:MM o null"
+  alarms ||--o{ events : "alarm_id"
+  alarms {
+    bigint id PK
+    smallint slot "0 a 4, compartimento"
+    text alarm_time "HH:MM"
+    text label "medicamento"
+    smallint_array days "1 lunes a 7 domingo"
     boolean active
     timestamptz updated_at
   }
   events {
     bigint id PK
+    bigint alarm_id FK "null si se borró"
     smallint slot "0 a 4"
     text type "triggered, silenced, missed"
     text device_time "hora del ESP32"
@@ -325,9 +351,9 @@ erDiagram
       <table>
         <thead><tr><th>Tabla</th><th>Para qué</th><th>Filas</th></tr></thead>
         <tbody>
-          <tr><td><code>schedules</code></td><td>La hora de cada cavidad. Se crea con 5 filas vacías.</td><td class="num">5 fijas</td></tr>
-          <tr><td><code>events</code></td><td>Historial: cuándo sonó, cuándo se confirmó, cuándo se perdió.</td><td class="num">≈ 6 por toma</td></tr>
-          <tr><td><code>commands</code></td><td>Órdenes del panel al ESP32 (por ahora solo silenciar).</td><td class="num">pocas</td></tr>
+          <tr><td><code>alarms</code></td><td>Cada alarma: compartimento, medicamento, hora y días. Única por compartimento y hora.</td><td class="num">hasta 20</td></tr>
+          <tr><td><code>events</code></td><td>Historial: cuándo sonó, cuándo se confirmó, cuándo se perdió.</td><td class="num">≈ 2 por toma</td></tr>
+          <tr><td><code>commands</code></td><td>Órdenes del portal al ESP32 (por ahora solo silenciar).</td><td class="num">pocas</td></tr>
           <tr><td><code>device_status</code></td><td>Último contacto del ESP32 y si está sonando.</td><td class="num">1 fija</td></tr>
         </tbody>
       </table>
@@ -336,7 +362,7 @@ erDiagram
 
   <section>
     <span class="eyebrow">Flujo 1</span>
-    <h2>Programar un horario desde el celular</h2>
+    <h2>Crear una alarma desde el celular</h2>
     <div class="diagram">
 <pre class="mermaid">
 sequenceDiagram
@@ -345,15 +371,15 @@ sequenceDiagram
   participant V as Vercel /api
   participant S as Supabase
   participant E as ESP32
-  F->>V: PUT /api/schedules, pastilla 1 a las 08:00
-  V->>S: upsert en schedules
-  S-->>V: ok
-  V-->>F: 200, horarios guardados
+  F->>V: POST /api/alarms, compartimento 1 a las 07:00
+  V->>S: insert en alarms
+  S-->>V: alarma con id
+  V-->>F: 201, alarma creada
   Note over E: hasta 30 s después
   E->>V: GET /api/device/sync
-  V->>S: lee schedules, consume commands, actualiza device_status
-  V-->>E: hora de Bogotá + schedules con 08:00
-  E->>E: ajusta su reloj y guarda schedules.json en la flash
+  V->>S: lee alarms, consume commands, actualiza device_status
+  V-->>E: hora de Bogotá + alarmas con 07:00
+  E->>E: ajusta su reloj y guarda alarms.json en la flash
 </pre>
     </div>
   </section>
@@ -401,13 +427,13 @@ sequenceDiagram
   participant E as ESP32
   participant V as Vercel /api
   Note over E,V: el WiFi se cae
-  E->>E: usa los horarios de schedules.json
+  E->>E: usa las alarmas de alarms.json
   E->>E: a las 08:00 suena igual, el reloj interno sigue corriendo
   E->>E: guarda los eventos en la cola, máximo 50
   Note over E,V: el WiFi vuelve
   E->>V: POST /api/device/events con toda la cola
   E->>V: GET /api/device/sync
-  V-->>E: horarios al día y hora corregida
+  V-->>E: alarmas al día y hora corregida
 </pre>
     </div>
     <div class="note">
@@ -416,7 +442,7 @@ sequenceDiagram
     </div>
     <div class="note">
       <strong>Límite por no tener RTC</strong>
-      <p>Si se va la luz y vuelve sin internet, el ESP32 no sabe qué hora es y no puede disparar alarmas hasta que se conecte a Vercel. Mientras tanto, los 5 LEDs parpadean despacio para avisar que está "sin hora". Los horarios no se pierden porque están en la flash.</p>
+      <p>Si se va la luz y vuelve sin internet, el ESP32 no sabe qué hora es y no puede disparar alarmas hasta que se conecte a Vercel. Mientras tanto, los 5 LEDs parpadean despacio para avisar que está "sin hora". Las alarmas no se pierden porque están en la flash.</p>
     </div>
   </section>
 
@@ -468,11 +494,11 @@ sequenceDiagram
 │   ├── clock.py  alarms.py  cloud.py  net.py
 ├── web/                 <span class="c"># proyecto de Vercel</span>
 │   ├── api/device/sync.js   api/device/events.js
-│   ├── api/state.js   api/schedules.js   api/silence.js
+│   ├── api/state.js   api/silence.js   api/alarms/index.js   api/alarms/[id].js
 │   ├── lib/supabase.js  lib/auth.js  lib/constants.js
 │   ├── public/index.html  <span class="c"># panel para el celular</span>
 │   └── package.json
-├── supabase/schema.sql  <span class="c"># tablas, CHECK y RLS</span>
+├── supabase/migrations/  <span class="c"># tablas, CHECK y RLS (ya aplicado)</span>
 └── docs/plan-backend.html</pre>
   </section>
 
@@ -481,10 +507,10 @@ sequenceDiagram
     <h2>Paso a paso</h2>
     <ol class="phases">
       <li><div><h3>Prueba de hardware en MicroPython</h3><p>Encender los 5 LEDs y hacer sonar el buzzer desde PyCharm. Todavía sin red.</p></div></li>
-      <li><div><h3>Base de datos en Supabase</h3><p>Crear el proyecto y correr <code>schema.sql</code>. Revisar que RLS esté activo.</p></div></li>
+      <li><div><h3>Base de datos en Supabase · hecho</h3><p>Tablas <code>alarms</code>, <code>events</code>, <code>commands</code> y <code>device_status</code> creadas con RLS. La clave pública no puede leer nada.</p></div></li>
       <li><div><h3>API en Vercel</h3><p>Los 5 endpoints y las variables de entorno. Probarlos con <code>curl</code> antes de tocar el ESP32.</p></div></li>
-      <li><div><h3>Panel web</h3><p>Horarios, botón de silenciar, estado en línea e historial, pensado para el celular.</p></div></li>
-      <li><div><h3>Firmware conectado</h3><p>WiFi, hora desde Vercel, consultas, cola de eventos y horarios guardados en la flash.</p></div></li>
+      <li><div><h3>Portal web · diseño hecho</h3><p>Alarmas con modal, confirmar toma, estado en línea e historial. Falta conectarlo a la API.</p></div></li>
+      <li><div><h3>Firmware conectado</h3><p>WiFi, hora desde Vercel, consultas, cola de eventos y alarmas (con días) guardadas en la flash.</p></div></li>
       <li><div><h3>Prueba de punta a punta</h3><p>Una alarma a 2 minutos: silenciarla desde el celular, dejar que otra se pierda y desconectar el WiFi para ver que suena igual. Por último, reiniciarlo sin red para ver el aviso de "sin hora".</p></div></li>
     </ol>
   </section>
