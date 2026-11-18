@@ -166,7 +166,7 @@ flowchart LR
         <h3>ESP32</h3>
         <span class="tag">MicroPython · firmware/</span>
         <ul>
-          <li>Lee la hora del DS1307 y la corrige por NTP cuando hay WiFi.</li>
+          <li>Lee la hora del DS1307 y la corrige por NTP (hora de Bogotá, UTC−5) cuando hay WiFi.</li>
           <li>Dispara la alarma: LED de la cavidad y buzzer intermitente.</li>
           <li>Guarda los horarios en <code>schedules.json</code> (flash).</li>
           <li>Consulta a Vercel cada 30 s, o cada 5 s mientras suena.</li>
@@ -440,6 +440,7 @@ sequenceDiagram
           <tr><td>Consulta mientras suena</td><td class="num">5 s</td><td>Silenciar desde el celular tarda como mucho 5 s</td></tr>
           <tr><td>Alarma sin confirmar</td><td class="num">10 min</td><td>Se apaga el buzzer y se registra <code>missed</code></td></tr>
           <tr><td>Vida de un comando</td><td class="num">2 min</td><td>Un "silenciar" viejo se descarta</td></tr>
+          <tr><td>Zona horaria</td><td class="num">UTC−5</td><td>Bogotá, sin horario de verano: <code>TZ_OFFSET_HOURS = -5</code> en <code>config.py</code></td></tr>
           <tr><td>En línea si el último contacto fue hace menos de</td><td class="num">90 s</td><td>Tres consultas perdidas antes de mostrar "desconectado"</td></tr>
           <tr><td>Cola de eventos sin red</td><td class="num">50</td><td>Más de 50 eventos sin red: se descartan los más viejos</td></tr>
         </tbody>
@@ -486,7 +487,6 @@ sequenceDiagram
       <table>
         <thead><tr><th>Tema</th><th>Propuesta</th></tr></thead>
         <tbody>
-          <tr><td>Zona horaria</td><td>Un número fijo en <code>config.py</code> (por ejemplo −5). Hay que confirmar cuál es la tuya.</td></tr>
           <tr><td>Tipo de buzzer</td><td>Activo (se enciende con HIGH) o pasivo (necesita PWM). El firmware soporta los dos con una opción.</td></tr>
           <tr><td>Avisos al celular</td><td>Fuera de esta versión. Más adelante, una notificación cuando llegue un <code>missed</code>.</td></tr>
           <tr><td>Historial viejo</td><td>Sin limpieza al principio. Más adelante, un <code>pg_cron</code> en Supabase que borre eventos de más de 90 días.</td></tr>
