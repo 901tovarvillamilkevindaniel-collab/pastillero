@@ -17,7 +17,7 @@ Los conectores (MCP de Supabase, GitHub) **no tienen acceso** a estos recursos.
 | Supabase | proyecto `ylhflnfqmeywktasmdda` (us-west-2) | Management API con `SUPABASE_ACCESS_TOKEN`, REST con `SUPABASE_SECRET_KEY` |
 | Vercel | proyecto `pastillero` (`prj_qhdBTSBrOrv3ACW7wcXQS79EjpaM`), equipo `test11-c4c7` (`team_2wk3OCneKAMa7xByMLzo2oHM`), producción en **https://pastillero-two.vercel.app** | Conector MCP de Vercel (sí tiene acceso, cuenta `901tovarvillamilkevindaniel`) |
 
-- Vercel: la cuenta todavía **no tiene GitHub conectado**, así que no despliega solo con cada push. Las variables `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `DEVICE_KEY`, `ADMIN_KEY` (sensitive) y `TIMEZONE` ya están cargadas. Prueba de producción: `node tools/test_prod.mjs https://pastillero-two.vercel.app`.
+- Vercel: enlazado al repo de GitHub con *Root Directory* `web/` y Node 24. **Cada `git push` a `main` despliega a producción solo.** Las variables `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `DEVICE_KEY`, `ADMIN_KEY` (sensitive) y `TIMEZONE` ya están cargadas. Prueba de producción: `node tools/test_prod.mjs https://pastillero-two.vercel.app`.
 
 - El conector MCP de Supabase apunta a otra cuenta (proyecto "VIVAR AI PLATAFORM"). **No usarlo ni tocar ese proyecto.**
 - SQL en Supabase: `POST https://api.supabase.com/v1/projects/ylhflnfqmeywktasmdda/database/query` con `{"query": "..."}`.
