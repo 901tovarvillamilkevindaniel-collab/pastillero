@@ -1,0 +1,20 @@
+# Secretos (WiFi, claves de API) - nunca subirlos al repo
+.env
+.env.*
+!.env.example
+firmware/config.py
+
+# Node / Vercel
+node_modules/
+.vercel/
+
+# Python / PyCharm
+__pycache__/
+*.pyc
+.idea/
+venv/
+.venv/
+
+# Sistema
+.DS_Store
+Thumbs.db
