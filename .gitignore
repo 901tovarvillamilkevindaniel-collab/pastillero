@@ -4,6 +4,9 @@
 !.env.example
 firmware/config.py
 
+# Binarios de firmware descargados (se bajan de micropython.org)
+firmware_bin/
+
 # Node / Vercel
 node_modules/
 .vercel/
