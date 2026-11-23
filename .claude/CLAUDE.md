@@ -26,7 +26,7 @@ Los conectores (MCP de Supabase, GitHub) **no tienen acceso** a estos recursos.
 
 ## Hardware
 - LEDs (compartimentos 1 a 4): GPIO 23, 19, 18, 17 (verde, rojo, azul, amarillo). El 5.º (naranja, GPIO 16) se quitó el 2026-11-22: la base solo acepta `slot` 0..3.
-- Buzzer: `BUZZER_PIN = 15` en `firmware/config.py` (como el diagrama de Wokwi; el sketch viejo usaba 12). Activo o pasivo con `BUZZER_PASSIVE`. **Falta que el usuario confirme pin y tipo.**
+- Buzzer: `BUZZER_PIN = 15` en `firmware/config.py` (como el diagrama de Wokwi; el sketch viejo usaba 12). Buzzer **activo**, confirmado con `hw_test.py` el 2026-11-22 (`BUZZER_PASSIVE = False`). Los 4 LEDs también probados y funcionando.
 - LED azul de la placa (GPIO 2, "D2"): `STATUS_LED_PIN`, repite lo que hacen los LEDs. Sirve para probar sin nada conectado.
 - WiFi de la casa: SSID **"Estrella"** (con mayúscula), en `firmware/config.py`.
 - **Sin RTC**: la hora de Bogotá (UTC−5) la manda Vercel en cada `/api/device/sync`.
