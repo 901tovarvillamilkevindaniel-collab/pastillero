@@ -67,20 +67,36 @@ def poll(alarms, state):
     return data.get("poll_s")
 
 
+def start_watchdog():
+    """Reinicia la placa si el bucle deja de alimentar el watchdog por WDT_S segundos."""
+    seconds = getattr(config, "WDT_S", 0)
+    if not seconds:
+        print("Watchdog: desactivado (WDT_S = 0)")
+        return None
+    wdt = machine.WDT(timeout=int(seconds * 1000))
+    print("Watchdog: activo, reinicia la placa si se traba más de %d s" % seconds)
+    return wdt
+
+
 def main():
     print("Pastillero Santos", config.FW_VERSION)
+    if machine.reset_cause() == machine.WDT_RESET:
+        print("Arranque: la placa se reinició sola porque se había trabado (watchdog)")
     alarms = Alarms(report)
+    wdt = start_watchdog()
     try:
         cache = load_cache()
         alarms.set_alarms(cache)
         state = {"cache": cache}
         print("Alarmas guardadas en la flash:", len(cache))
-        net.connect(config.WIFI_TIMEOUT_S)
+        net.connect(config.WIFI_TIMEOUT_S)   # espera como mucho WIFI_TIMEOUT_S (< WDT_S)
 
         poll_s = config.POLL_S
         last_poll = None
         last_check = None
         while True:
+            if wdt:
+                wdt.feed()
             now = time.ticks_ms()
             if clock.valid() and (last_check is None or time.ticks_diff(now, last_check) >= 1000):
                 last_check = now
@@ -103,6 +119,8 @@ try:
     main()
 except KeyboardInterrupt:
     print("Detenido con Ctrl-C")
+    if getattr(config, "WDT_S", 0):
+        print("Ojo: el watchdog sigue activo; la placa se reiniciará sola en menos de %d s" % config.WDT_S)
 except Exception as e:
     import sys
     sys.print_exception(e)

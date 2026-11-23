@@ -39,6 +39,7 @@ Los conectores (MCP de Supabase, GitHub) **no tienen acceso** a estos recursos.
 - `supabase/migrations/` — esquema: `alarms`, `events`, `commands`, `device_status`, con RLS sin políticas.
 - `firmware/hw_test.py` — prueba de conexiones (4 LEDs, buzzer activo/pasivo, LED D2): `python tools/run_on_board.py firmware/hw_test.py`.
 - Si la placa no responde al raw REPL (quedó colgada), reiniciarla por RTS (pulso en EN) o con el botón EN.
+- **Watchdog** (firmware 0.2.0, `WDT_S = 60` en `config.py`): si el bucle no lo alimenta en 60 s, la placa se reinicia sola (probado el 2026-11-22: se reinició a los 60 s y volvió al WiFi). Al parar `main.py` con Ctrl-C (PyCharm, `run_on_board.py`, `upload_firmware.py`) el watchdog sigue activo: hay ~60 s para trabajar antes de que reinicie. Para sesiones largas de REPL, poner `WDT_S = 0` y subir el config.
 - `tools/upload_firmware.py --reset` — copia el firmware a la flash (verifica SHA-1) y reinicia. `tools/monitor.py` — lee la salida serie.
 - `tools/test_firmware.py` — prueba la lógica del firmware en el PC (simula machine). `tools/test_api.mjs` / `tools/test_prod.mjs` — prueban la API.
 - En Windows, correr los .py con `PYTHONIOENCODING=utf-8` para que se vean los acentos y ✓.

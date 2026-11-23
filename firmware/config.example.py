@@ -2,7 +2,7 @@
 # Copia este archivo como config.py y llena WiFi y DEVICE_KEY.
 # config.py está en .gitignore: nunca se sube a GitHub.
 
-FW_VERSION = "0.1.0"
+FW_VERSION = "0.2.0"
 
 # --- WiFi (solo redes de 2,4 GHz) ---
 WIFI_SSID = "NOMBRE_DE_TU_WIFI"
@@ -28,3 +28,9 @@ STATUS_LED_PIN = 2                # LED azul de la placa (D2): repite lo que hac
 # --- Alarmas ---
 ALARM_TIMEOUT_S = 600             # 10 min sin confirmar -> "missed" y se calla el buzzer
 CLOCK_TOLERANCE_S = 2             # solo se corrige el reloj si se desvía más que esto
+
+# --- Watchdog ---
+# Si el programa se traba más de WDT_S segundos, el ESP32 se reinicia solo.
+# Ojo: una vez activo no se puede apagar. Si paras el programa con Ctrl-C (PyCharm, REPL),
+# la placa se reinicia sola a los WDT_S segundos. Pon 0 para desactivarlo mientras desarrollas.
+WDT_S = 60
