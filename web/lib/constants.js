@@ -1,6 +1,6 @@
 // Reglas del pastillero. Si cambias algo aquí, revisa también firmware/config.py.
 
-export const SLOTS = 5;                       // compartimentos 0..4 (LED GPIO 23, 19, 18, 17, 16)
+export const SLOTS = 4;                       // compartimentos 0..3 (LED GPIO 23, 19, 18, 17)
 export const MAX_ALARMS = 20;
 export const MAX_LABEL = 40;
 export const MAX_EVENTS_PER_POST = 50;        // cola del ESP32 tras un corte de WiFi

@@ -28,7 +28,6 @@
     --led-2: #dc2626;
     --led-3: #2563eb;
     --led-4: #ca8a04;
-    --led-5: #ea580c;
     --backdrop: rgba(10, 20, 16, 0.5);
     --f-body: "Atkinson Hyperlegible Next", "Segoe UI", system-ui, sans-serif;
     --f-mono: "Atkinson Hyperlegible Mono", ui-monospace, Consolas, monospace;
@@ -39,7 +38,7 @@
       --bg: #0e1412; --surface: #161f1c; --ink: #e5eeea; --muted: #9cafa7; --line: #29352f;
       --accent: #3cc2a3; --accent-ink: #06231c; --accent-soft: #123129;
       --alarm: #fb923c; --alarm-soft: #3a2314; --danger: #f87171; --ok: #4ade80; --off: #5f6b66;
-      --led-1: #22c55e; --led-2: #f87171; --led-3: #60a5fa; --led-4: #facc15; --led-5: #fb923c;
+      --led-1: #22c55e; --led-2: #f87171; --led-3: #60a5fa; --led-4: #facc15;
       --backdrop: rgba(0, 0, 0, 0.65);
       color-scheme: dark;
     }
@@ -48,7 +47,7 @@
     --bg: #0e1412; --surface: #161f1c; --ink: #e5eeea; --muted: #9cafa7; --line: #29352f;
     --accent: #3cc2a3; --accent-ink: #06231c; --accent-soft: #123129;
     --alarm: #fb923c; --alarm-soft: #3a2314; --danger: #f87171; --ok: #4ade80; --off: #5f6b66;
-    --led-1: #22c55e; --led-2: #f87171; --led-3: #60a5fa; --led-4: #facc15; --led-5: #fb923c;
+    --led-1: #22c55e; --led-2: #f87171; --led-3: #60a5fa; --led-4: #facc15;
     --backdrop: rgba(0, 0, 0, 0.65);
     color-scheme: dark;
   }
@@ -170,7 +169,7 @@
   .field input[type="time"] { font-family: var(--f-mono); font-size: 1.8rem; font-weight: 700; min-height: 60px; }
   .hint { font-size: 0.85rem; color: var(--muted); }
 
-  .pick-slots { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+  .pick-slots { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
   .pick { position: relative; display: grid; justify-items: center; gap: 4px; padding: 10px 2px; border: 1.5px solid var(--line); border-radius: 12px; cursor: pointer; background: var(--bg); }
   .pick input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
   .pick .led { width: 28px; height: 28px; }
@@ -300,7 +299,6 @@
     { gpio: 19, color: 'var(--led-2)', name: 'rojo' },
     { gpio: 18, color: 'var(--led-3)', name: 'azul' },
     { gpio: 17, color: 'var(--led-4)', name: 'amarillo' },
-    { gpio: 16, color: 'var(--led-5)', name: 'naranja' },
   ];
   const DAYS = [ // ISO: 1 = lunes ... 7 = domingo
     { n: 1, short: 'L', long: 'lunes' }, { n: 2, short: 'M', long: 'martes' }, { n: 3, short: 'X', long: 'miércoles' },
@@ -385,7 +383,7 @@
         { id: 3, slot: 1, time: '13:00', label: 'Metformina 850 mg', days: ALL_DAYS, active: true },
         { id: 4, slot: 2, time: '21:00', label: 'Atorvastatina 20 mg', days: ALL_DAYS, active: true },
         { id: 5, slot: 3, time: '09:00', label: 'Vitamina D', days: [7], active: true },
-        { id: 6, slot: 4, time: '08:00', label: 'Omeprazol', days: [1, 2, 3, 4, 5], active: false },
+        { id: 6, slot: 1, time: '08:00', label: 'Omeprazol', days: [1, 2, 3, 4, 5], active: false },
       ],
       events: [
         { alarm_id: 1, slot: 0, type: 'silenced', created_at: iso(95) },

@@ -1,6 +1,6 @@
 # Pastillero Santos
 
-Pastillero inteligente: ESP32 DevKit V1 con MicroPython, 5 compartimentos con LED y un buzzer.
+Pastillero inteligente: ESP32 DevKit V1 con MicroPython, 4 compartimentos con LED y un buzzer.
 Las alarmas se crean desde un portal web en Vercel y se guardan en Supabase.
 Plan completo: `docs/plan-backend.html` (y `docs/plan-backend.pdf`).
 
@@ -25,9 +25,9 @@ Los conectores (MCP de Supabase, GitHub) **no tienen acceso** a estos recursos.
 - Git push: la cuenta principal `kevinvt610` es **colaboradora** del repo (desde el 2026-11-18), así que `git push` funciona con la credencial que ya tiene Windows. El remoto usa la URL normal, sin usuario.
 
 ## Hardware
-- LEDs (compartimentos 1 a 5): GPIO 23, 19, 18, 17, 16 (verde, rojo, azul, amarillo, naranja).
+- LEDs (compartimentos 1 a 4): GPIO 23, 19, 18, 17 (verde, rojo, azul, amarillo). El 5.º (naranja, GPIO 16) se quitó el 2026-11-22: la base solo acepta `slot` 0..3.
 - Buzzer: `BUZZER_PIN = 15` en `firmware/config.py` (como el diagrama de Wokwi; el sketch viejo usaba 12). Activo o pasivo con `BUZZER_PASSIVE`. **Falta que el usuario confirme pin y tipo.**
-- LED azul de la placa (GPIO 2, "D2"): `STATUS_LED_PIN`, repite lo que hacen los 5 LEDs. Sirve para probar sin nada conectado.
+- LED azul de la placa (GPIO 2, "D2"): `STATUS_LED_PIN`, repite lo que hacen los LEDs. Sirve para probar sin nada conectado.
 - WiFi de la casa: SSID **"Estrella"** (con mayúscula), en `firmware/config.py`.
 - **Sin RTC**: la hora de Bogotá (UTC−5) la manda Vercel en cada `/api/device/sync`.
 - Placa actual en **COM6** (chip USB CH340), MicroPython v1.29.0. Para flashear hay que entrar a modo descarga a mano: mantener BOOT, pulsar EN, soltar BOOT.
@@ -37,7 +37,8 @@ Los conectores (MCP de Supabase, GitHub) **no tienen acceso** a estos recursos.
 - `firmware/` — MicroPython que se sube al ESP32 (`config.py` con WiFi y `DEVICE_KEY`, fuera de git).
 - `web/` — proyecto de Vercel: `public/index.html` (portal), `api/` (funciones), `.env` (fuera de git).
 - `supabase/migrations/` — esquema: `alarms`, `events`, `commands`, `device_status`, con RLS sin políticas.
-- `tools/run_on_board.py` — corre un script en la placa sin guardarlo: `python tools/run_on_board.py firmware/hw_test.py`.
+- `firmware/hw_test.py` — prueba de conexiones (4 LEDs, buzzer activo/pasivo, LED D2): `python tools/run_on_board.py firmware/hw_test.py`.
+- Si la placa no responde al raw REPL (quedó colgada), reiniciarla por RTS (pulso en EN) o con el botón EN.
 - `tools/upload_firmware.py --reset` — copia el firmware a la flash (verifica SHA-1) y reinicia. `tools/monitor.py` — lee la salida serie.
 - `tools/test_firmware.py` — prueba la lógica del firmware en el PC (simula machine). `tools/test_api.mjs` / `tools/test_prod.mjs` — prueban la API.
 - En Windows, correr los .py con `PYTHONIOENCODING=utf-8` para que se vean los acentos y ✓.

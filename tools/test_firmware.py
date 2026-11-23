@@ -46,7 +46,7 @@ machine.Pin, machine.PWM, machine.RTC = Pin, PWM, RTC
 sys.modules["machine"] = machine
 
 config = types.ModuleType("config")
-config.LED_PINS = (23, 19, 18, 17, 16)
+config.LED_PINS = (23, 19, 18, 17)
 config.BUZZER_PIN = 15
 config.BUZZER_PASSIVE = False
 config.BUZZER_FREQ = 2000

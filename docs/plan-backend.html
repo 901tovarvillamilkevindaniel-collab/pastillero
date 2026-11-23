@@ -4,7 +4,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap">
 <style>
-  /* Layout: una columna de lectura (~68ch) con tiras anchas para diagramas; las 5 cavidades del pastillero como motivo recurrente */
+  /* Layout: una columna de lectura (~68ch) con tiras anchas para diagramas; las 4 cavidades del pastillero como motivo recurrente */
   :root {
     --bg: #f3f6f7;
     --surface: #ffffff;
@@ -55,7 +55,7 @@
   :not(pre) > code { background: var(--code-bg); padding: 1px 6px; border-radius: 4px; }
   a { color: var(--accent); }
 
-  /* Cabecera con la tira de 5 cavidades */
+  /* Cabecera con la tira de 4 cavidades */
   header { display: grid; gap: 20px; }
   .blister { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; max-width: 520px; }
   .cell { border: 1.5px solid var(--line); border-radius: 999px; padding: 10px 4px; text-align: center; background: var(--surface); display: grid; gap: 2px; }
@@ -121,17 +121,16 @@
 <div class="wrap">
 
   <header>
-    <span class="eyebrow">Plan de backend · v3</span>
+    <span class="eyebrow">Plan de backend · v4</span>
     <h1>Pastillero Santos</h1>
     <p class="lede">Cómo se conectan el ESP32, Vercel y Supabase. Qué funciones serverless vamos a escribir, qué hace cada una y en qué orden las construimos.</p>
-    <div class="blister" aria-label="Las cinco cavidades del pastillero con su pin">
+    <div class="blister" aria-label="Las cuatro cavidades del pastillero con su pin">
       <div class="cell"><b>1</b><span>GPIO 23</span></div>
       <div class="cell on"><b>2</b><span>GPIO 19</span></div>
       <div class="cell"><b>3</b><span>GPIO 18</span></div>
       <div class="cell"><b>4</b><span>GPIO 17</span></div>
-      <div class="cell"><b>5</b><span>GPIO 16</span></div>
     </div>
-    <p class="caption">Cinco cavidades, cada una con su LED. Buzzer en GPIO 12. Sin módulo RTC: la hora la manda Vercel. En el ejemplo, la pastilla 2 está sonando.</p>
+    <p class="caption">Cuatro cavidades, cada una con su LED. Buzzer en GPIO 15. Sin módulo RTC: la hora la manda Vercel. En el ejemplo, la pastilla 2 está sonando.</p>
   </header>
 
   <section>
@@ -147,7 +146,7 @@ flowchart LR
     A["Funciones serverless<br/>/api/..."]
   end
   E["ESP32 DevKit V1<br/>MicroPython"]
-  H["5 LEDs + buzzer"]
+  H["4 LEDs + buzzer"]
   S[("Supabase<br/>Postgres")]
   F -->|"abre la página"| P
   P -->|"fetch HTTPS, acceso libre"| A
@@ -305,7 +304,7 @@ flowchart LR
 
     <div class="note ok">
       <strong>Código compartido</strong>
-      <p><code>web/lib/supabase.js</code> crea el cliente con la clave secreta. <code>web/lib/auth.js</code> compara las claves en tiempo constante. <code>web/lib/constants.js</code> guarda los 5 compartimentos, el formato de la hora, el máximo de alarmas y los tiempos límite.</p>
+      <p><code>web/lib/supabase.js</code> crea el cliente con la clave secreta. <code>web/lib/auth.js</code> compara las claves en tiempo constante. <code>web/lib/constants.js</code> guarda los 4 compartimentos, el formato de la hora, el máximo de alarmas y los tiempos límite.</p>
     </div>
   </section>
 
@@ -319,7 +318,7 @@ erDiagram
   alarms ||--o{ events : "alarm_id"
   alarms {
     bigint id PK
-    smallint slot "0 a 4, compartimento"
+    smallint slot "0 a 3, compartimento"
     text alarm_time "HH:MM"
     text label "medicamento"
     smallint_array days "1 lunes a 7 domingo"
@@ -329,7 +328,7 @@ erDiagram
   events {
     bigint id PK
     bigint alarm_id FK "null si se borró"
-    smallint slot "0 a 4"
+    smallint slot "0 a 3"
     text type "triggered, silenced, missed"
     text device_time "hora del ESP32"
     timestamptz created_at
@@ -442,7 +441,7 @@ sequenceDiagram
     </div>
     <div class="note">
       <strong>Límite por no tener RTC</strong>
-      <p>Si se va la luz y vuelve sin internet, el ESP32 no sabe qué hora es y no puede disparar alarmas hasta que se conecte a Vercel. Mientras tanto, los 5 LEDs parpadean despacio para avisar que está "sin hora". Las alarmas no se pierden porque están en la flash.</p>
+      <p>Si se va la luz y vuelve sin internet, el ESP32 no sabe qué hora es y no puede disparar alarmas hasta que se conecte a Vercel. Mientras tanto, los 4 LEDs parpadean despacio para avisar que está "sin hora". Las alarmas no se pierden porque están en la flash.</p>
     </div>
   </section>
 
@@ -506,7 +505,7 @@ sequenceDiagram
     <span class="eyebrow">Orden de trabajo</span>
     <h2>Paso a paso</h2>
     <ol class="phases">
-      <li><div><h3>Prueba de hardware en MicroPython</h3><p>Encender los 5 LEDs y hacer sonar el buzzer desde PyCharm. Todavía sin red.</p></div></li>
+      <li><div><h3>Prueba de hardware en MicroPython</h3><p>Encender los 4 LEDs y hacer sonar el buzzer desde PyCharm. Todavía sin red.</p></div></li>
       <li><div><h3>Base de datos en Supabase · hecho</h3><p>Tablas <code>alarms</code>, <code>events</code>, <code>commands</code> y <code>device_status</code> creadas con RLS. La clave pública no puede leer nada.</p></div></li>
       <li><div><h3>API en Vercel</h3><p>Los 5 endpoints y las variables de entorno. Probarlos con <code>curl</code> antes de tocar el ESP32.</p></div></li>
       <li><div><h3>Portal web · diseño hecho</h3><p>Alarmas con modal, confirmar toma, estado en línea e historial. Falta conectarlo a la API.</p></div></li>

@@ -83,8 +83,8 @@ try {
   r = await admin(api.alarms, { method: 'POST', body: { slot: 2, time: '21:00' } });
   const a2 = r.body.alarm; if (a2) created.push(a2.id);
   check('días y activa por defecto', a2 && JSON.stringify(a2.days) === '[1,2,3,4,5,6,7]' && a2.active === true, show(r));
-  r = await admin(api.alarms, { method: 'POST', body: { slot: 7, time: '07:00' } });
-  check('compartimento 7 -> 400', r.statusCode === 400, show(r));
+  r = await admin(api.alarms, { method: 'POST', body: { slot: 4, time: '07:00' } });
+  check('compartimento 5 (slot 4) ya no existe -> 400', r.statusCode === 400, show(r));
   r = await admin(api.alarms, { method: 'POST', body: { slot: 1, time: '7:00' } });
   check('hora "7:00" -> 400', r.statusCode === 400, show(r));
   r = await admin(api.alarms, { method: 'POST', body: { slot: 1, time: '08:00', days: [] } });
@@ -132,7 +132,7 @@ try {
   r = await device(api.events, { method: 'POST', body: { events: [
     { alarm_id: a2.id, slot: 2, type: 'triggered', device_time: '2026-11-18 21:00:00' },
     { alarm_id: a2.id, slot: 2, type: 'silenced', device_time: '2026-11-18 21:00:40' },
-    { alarm_id: 999999999, slot: 4, type: 'missed', device_time: '2026-11-18 21:10:00' },
+    { alarm_id: 999999999, slot: 3, type: 'missed', device_time: '2026-11-18 21:10:00' },
   ] } });
   check('guarda 3 eventos -> 201', r.statusCode === 201 && r.body.saved === 3, show(r));
   r = await device(api.events, { method: 'POST', body: { events: [{ slot: 0, type: 'olvido' }] } });

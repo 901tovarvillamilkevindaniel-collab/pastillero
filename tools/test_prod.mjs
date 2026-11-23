@@ -38,7 +38,7 @@ check('GET /api/state -> 200', r.status === 200 && Array.isArray(r.json?.alarms)
 r = await device('/api/device/sync?ringing=0&fw=prueba-prod');
 check('ESP32 sync -> 200', r.status === 200, `(HTTP ${r.status} ${r.text.slice(0, 160)})`);
 check('hora de Bogotá -300 min', r.json?.clock?.utc_offset_min === -300, JSON.stringify(r.json?.clock));
-r = await admin('/api/alarms', { method: 'POST', body: { slot: 4, time: '23:59', label: 'Prueba producción' } });
+r = await admin('/api/alarms', { method: 'POST', body: { slot: 3, time: '23:59', label: 'Prueba producción' } });
 check('crear alarma -> 201', r.status === 201, `(HTTP ${r.status} ${r.text.slice(0, 160)})`);
 const id = r.json?.alarm?.id;
 if (id) {
